@@ -53269,8 +53269,7 @@ var<${access}> ${name} : ${structName};`;
   var lifetime = createLifetime();
   var resolvedSDK;
   void (async () => {
-    const playdrop = window.playdrop;
-    const sdk = playdrop ? resolvedSDK = await playdrop.init() : void 0;
+    const sdk = void 0;
     if (lifetime.disposed) return;
     const host = sdk ? connectHost(sdk, document.getElementById("hint")) : { setAction(_f) {
     }, setReset(_f) {
@@ -53301,7 +53300,7 @@ var<${access}> ${name} : ${structName};`;
     const RARE = ["\u91D1\u306E\u30B9\u30D7\u30FC\u30F3", "\u8679\u8272\u306E\u672C", "\u53E4\u4EE3\u306E\u30B3\u30A4\u30F3", "\u30C0\u30A4\u30E4\u30DC\u30FC\u30EB"];
     const RAR = ["\u30EC\u30A2", "\u30A8\u30D4\u30C3\u30AF", "\u30EC\u30B8\u30A7\u30F3\u30C9", "\u30DF\u30B7\u30C3\u30AF"];
     const TITLES = ["\u898B\u7FD2\u3044\u6E05\u6383\u54E1", "\u6574\u7406\u6574\u9813\u30DE\u30B9\u30BF\u30FC", "\u30B3\u30EC\u30AF\u30BF\u30FC", "\u8D85\u30B3\u30EC\u30AF\u30BF\u30FC", "\u6383\u9664\u795E", "\u4F1D\u8AAC\u306E\u7247\u4ED8\u3051\u30DE\u30B9\u30BF\u30FC"];
-    const fresh = () => ({ money: 0, sk: Array(10).fill(0), gk: Array(15).fill(0), col: 0, left: Array(TYPES).fill(PER), done: Array(TYPES).fill(false), found: Array(TYPES).fill(false), time: 0, titles: Array(6).fill(false), tickets: 0, ms: 0, prestige: 0, area: 0 });
+    const fresh = () => ({ money: 0, sk: Array(10).fill(0), gk: Array(15).fill(0), col: 0, left: Array(TYPES).fill(PER), done: Array(TYPES).fill(false), found: Array(TYPES).fill(false), time: 0, titles: Array(6).fill(false), tickets: 0, ms: 0, prestige: 0, area: 0, missions: { claimed: {} } });
     let S = fresh();
     const KEY = "cleanup-master-3d-v1";
     try {
@@ -53311,6 +53310,10 @@ var<${access}> ${name} : ${structName};`;
     }
     const save = () => {
       try {
+        try {
+          S.carryData = carry.map((c) => ({ t: c.t, rare: c.rare ? 1 : 0 }));
+        } catch {
+        }
         localStorage.setItem(KEY, JSON.stringify(S));
       } catch {
       }
@@ -53698,7 +53701,7 @@ var<${access}> ${name} : ${structName};`;
     handL.position.set(-0.3, -0.32, -0.55);
     handR.position.set(0.3, -0.32, -0.55);
     hands.add(handL, handR);
-    const held = new Mesh(new BoxGeometry(0.18, 0.18, 0.18), mats[0]);
+    const held = new Group();
     held.position.set(0.3, -0.2, -0.6);
     held.visible = false;
     hands.add(held);
@@ -53766,7 +53769,7 @@ var<${access}> ${name} : ${structName};`;
       }
       scene.remove(it.mesh);
       targets.splice(targets.indexOf(it.mesh), 1);
-      if (it.rare) it.mesh.geometry.dispose();
+      if (it.rare && !it.mesh.userData.held) it.mesh.geometry.dispose();
       else onField[it.t]--;
       items.splice(items.indexOf(it), 1);
     };
@@ -53878,10 +53881,18 @@ var<${access}> ${name} : ${structName};`;
         });
       } else if (mode === "info") {
         const types = S.done.filter(Boolean).length, found = S.found.filter(Boolean).length;
+        const missRows = MIS.map((m) => {
+          const done = m.p() >= m.m;
+          return `<div>${done ? "\u2705" : "\u2B1C"} ${m.t} \u2014 ${Math.min(m.p(), m.m)}/${m.m}</div>`;
+        }).join("");
+        const canClaim = missDone() && !missClaimed();
+        const missHtml = `<b>\u{1F3AF} TERRA CARD連動ミッション</b><br>${missRows}<br>${missClaimed() ? "\u{1F381} 報酬受取済み「掃除のプロ」" : canClaim ? `<button id="cm3d" style="${bs}">\u{1F381} 報酬を受け取る（掃除のプロ）</button>` : "\u2139\uFE0F 全ミッション達成でTERRA CARDの限定カード「掃除のプロ」を獲得できる"}<br><small>受取後、同じサイトに置いたTERRA CARDを開くと自動で受け渡しされます。別サイトで遊ぶ場合はTERRA CARDを <code>?cm3d_reward=1</code> 付きURLで開いてください。</small><br><br>`;
         el(`<b>\u79F0\u53F7</b><br>${TITLES.map((t, i) => `<div>${S.titles[i] ? "\u2605" : "\u2606"} ${t}</div>`).join("")}<br>\u767A\u898B ${found}/100\u7A2E / \u30B3\u30F3\u30D7 ${types}/100\u7A2E<br>\u56DE\u53CE ${S.col}/${TOTAL} \u8EE2\u751F ${S.prestige}<br><button id="pr" style="${bs}">\u8EE2\u751F (\u5168\u56DE\u53CE\u5F8C\u30FB\u5168\u3066+50%)</button>`);
+        if (canClaim) panel.querySelector("#cm3d").addEventListener("click", () => cm3dGrantCard());
         panel.querySelector("#pr").addEventListener("click", () => {
           if (S.titles[5]) {
             const p = S.prestige + 1, ti = S.titles.slice();
+            carry.length = 0;
             S = { ...fresh(), prestige: p, titles: ti, gk: S.gk };
             save();
             say("\u8EE2\u751F\u3057\u307E\u3057\u305F!");
@@ -53891,10 +53902,31 @@ var<${access}> ${name} : ${structName};`;
         });
       }
     }
+    const MIS = [
+      { id: "col500", t: "累計500個回収", p: () => Math.min(S.col, 500), m: 500 },
+      { id: "comp10", t: "コンプ10種類達成", p: () => S.done.filter(Boolean).length, m: 10 },
+      { id: "found50", t: "50種類発見", p: () => S.found.filter(Boolean).length, m: 50 },
+      { id: "rare1", t: "レアアイテムを1個発見", p: () => Math.min(S.rareFound || 0, 1), m: 1 },
+      { id: "title3", t: "称号を3個獲得", p: () => S.titles.filter(Boolean).length, m: 3 }
+    ];
+    const missDone = () => MIS.every((m) => m.p() >= m.m);
+    const missClaimed = () => !!(S.missions && S.missions.claimed && S.missions.claimed.cm3d);
+    function cm3dGrantCard() {
+      if (!missDone() || missClaimed()) return;
+      S.missions = S.missions || {};
+      S.missions.claimed = S.missions.claimed || {};
+      S.missions.claimed.cm3d = true;
+      save();
+      try {
+        localStorage.setItem("tc_cm3d_reward", JSON.stringify({ unlockedCards: ["limited_cleanup_master"], prestige: S.prestige || 0, at: Date.now() }));
+      } catch {
+      }
+      say("\u{1F381} ミッション全達成! 報酬「掃除のプロ」をTERRA CARDに送りました!");
+      render2();
+    }
     async function downloadHtml() {
       try {
         let html = await (await fetch(location.href.split("#")[0])).text();
-        html = html.replace(/<script[^>]*src=[^>]*playdrop[^>]*><\/script>/i, "");
         const blob = new Blob([html], { type: "text/html" });
         const a = document.createElement("a");
         a.href = URL.createObjectURL(blob);
@@ -53913,6 +53945,7 @@ var<${access}> ${name} : ${structName};`;
       render2();
     };
     mode = "";
+    mkBtn("\u7F6E\u304F", dropLast);
     mkBtn("\u8A2D\u5B9A", tog("set"));
     mkBtn("\u30BB\u30FC\u30D6", () => {
       save();
@@ -53924,6 +53957,7 @@ var<${access}> ${name} : ${structName};`;
         if (r) {
           S = { ...fresh(), ...JSON.parse(r) };
           carry.length = 0;
+          restoreCarried();
           say("\u30ED\u30FC\u30C9\u3057\u307E\u3057\u305F");
         } else say("\u30BB\u30FC\u30D6\u30C7\u30FC\u30BF\u304C\u3042\u308A\u307E\u305B\u3093");
       } catch {
@@ -53945,6 +53979,7 @@ var<${access}> ${name} : ${structName};`;
       keys[e.code] = true;
       if (e.code === "KeyT" && gl(9) > 0) teleport();
       if (e.code === "KeyE") interact();
+      if (e.code === "KeyG") dropLast();
     };
     const ku = (e) => {
       keys[e.code] = false;
@@ -54016,6 +54051,47 @@ var<${access}> ${name} : ${structName};`;
       const u = h.object.userData;
       return { kind: u.kind, it: u.it, c: u.c, d: h.distance };
     }
+    function restoreCarried() {
+      const list = Array.isArray(S.carryData) ? S.carryData : [];
+      delete S.carryData;
+      for (const c of list) {
+        if (!c || typeof c.t !== "number" || c.t < 0) continue;
+        carry.push({ t: c.t, rare: !!c.rare, h: c.rare ? 0.6 : heights[c.t % 7] });
+      }
+      if (carry.length) say("\u30ED\u30FC\u30C9: \u6301\u3061\u7269" + carry.length + "\u500B\u3092\u5FA9\u5143\uFF01\uFF08G\u30AD\u30FC\u3067\u7F6E\u3066\u307E\u3059\uFF09");
+    }
+    setTimeout(restoreCarried, 0);
+    function dropCarried(idx, quiet = false) {
+      const c = carry[idx];
+      if (!c) return;
+      carry.splice(idx, 1);
+      if (!c.mesh) c.mesh = new Mesh(c.rare ? new IcosahedronGeometry(0.3, 3) : geos[c.t % 7], c.rare ? goldMat : mats[c.t]);
+      const m = c.mesh;
+      let fx = player.position.x - Math.sin(player.yaw) * 0.9, fz = player.position.z - Math.cos(player.yaw) * 0.9;
+      fx = Math.max(-W / 2 + 1, Math.min(W / 2 - 1, fx));
+      fz = Math.max(-H / 2 + 1, Math.min(H / 2 - 1, fz));
+      let ground = 0;
+      for (const b of boxes) if (b.top <= player.feet + 0.33 && fx > b.x0 - 0.1 && fx < b.x1 + 0.1 && fz > b.z0 - 0.1 && fz < b.z1 + 0.1) ground = Math.max(ground, b.top);
+      c.rest = Math.max(c.rest || 0, ground);
+      m.visible = true;
+      m.userData.held = false;
+      m.userData.it = { mesh: m, t: c.t, rare: c.rare, rest: c.rest, h: c.h, key: "" };
+      m.position.set(fx, c.rest + c.h / 2, fz);
+      m.rotation.y = Math.floor(Math.random() * 4) * Math.PI / 2 + (Math.random() - 0.5) * 0.3;
+      scene.add(m);
+      if (targets.indexOf(m) < 0) targets.push(m);
+      if (!c.rare) onField[c.t]++;
+      items.push(m.userData.it);
+      if (!quiet) say("\u7269\u3092\u7F6E\u304D\u307E\u3057\u305F");
+    }
+    function dropLast() {
+      if (!carry.length) {
+        say("\u6301\u3063\u3066\u3044\u308B\u7269\u304C\u306A\u3044");
+        return;
+      }
+      dropCarried(carry.length - 1);
+      sfx([380, 260]);
+    }
     function interact() {
       const a = aim();
       if (!a) return;
@@ -54028,7 +54104,9 @@ var<${access}> ${name} : ${structName};`;
           say("\u6301\u3061\u7269\u304C\u3044\u3063\u3071\u3044! \u53CE\u7D0D\u5834\u6240\u3078");
           return;
         }
-        carry.push({ t: a.it.t, rare: a.it.rare });
+        carry.push({ t: a.it.t, rare: a.it.rare, mesh: a.it.mesh, rest: a.it.rest, h: a.it.h });
+        a.it.mesh.userData.held = true;
+        a.it.mesh.visible = false;
         sfx([520, 780]);
         rm(a.it);
         if (!tutorialDone) tutStep = Math.max(tutStep, 2);
@@ -54106,6 +54184,7 @@ var<${access}> ${name} : ${structName};`;
         say("\u5927\u5F53\u305F\u308A!!");
       }
       if (rare) {
+        S.rareFound = (S.rareFound || 0) + 1;
         gain(1e3 * mult());
         S.tickets++;
         say(`${RARE[rare - 1]}\u3092\u767A\u898B! \xA51000+\u30C1\u30B1\u30C3\u30C8`);
@@ -54207,7 +54286,17 @@ var<${access}> ${name} : ${structName};`;
         it.mesh.position.y = it.rest + it.h / 2 * sc;
       }
       held.visible = carry.length > 0;
-      if (carry.length) held.material = mats[carry[carry.length - 1].t];
+      while (held.children.length) held.remove(held.children[0]);
+      if (carry.length) {
+        const hc = carry[carry.length - 1];
+        if (!hc.mesh) hc.mesh = new Mesh(hc.rare ? new IcosahedronGeometry(0.3, 3) : geos[hc.t % 7], hc.rare ? goldMat : mats[hc.t]);
+        const hm = hc.mesh;
+        hm.visible = true;
+        hm.scale.setScalar(hc.rare ? 0.55 : 0.7);
+        hm.position.set(0, 0, 0);
+        hm.rotation.set(0.4, 0, 0.2);
+        held.add(hm);
+      }
       hands.position.y = Math.sin(S.time * (l > 0 ? 9 : 2)) * (l > 0 ? 0.02 : 5e-3);
       prompt = aimed ? aimed.kind === "item" ? aimed.it.rare ? "\u30AF\u30EA\u30C3\u30AF\u3067\u56DE\u53CE: \u2728\u30EC\u30A2\u30A2\u30A4\u30C6\u30E0" : `\u30AF\u30EA\u30C3\u30AF\u3067\u56DE\u53CE: ${CATN[aimed.it.t % 7]}${aimed.it.t + 1}` : aimed.kind === "gacha" ? `\u30AF\u30EA\u30C3\u30AF\u3067\u30AC\u30C1\u30E3 (\u5238${S.tickets})` : `\u30AF\u30EA\u30C3\u30AF\u3067\u53CE\u7D0D: ${STORE[aimed.c]}` : "";
       if (gl(0) > 0 && auto > 10 - gl(0) * 1.5) {
@@ -54297,5 +54386,6 @@ var<${access}> ${name} : ${structName};`;
 })();
 
 </script>
+<script type="module" src="https://static.cloudflareinsights.com/beacon.min.js/vce701823e78c4301a35b7e07294d87301792088814092" integrity="sha512-UKNk8GbxkABxKcXYuLkO16EleLGUkcvJWtpSNmExE0Too3ZaFAxTscNWEc1OdAv5/BikHawapSCaiD2XCmp+Bw==" data-cf-beacon='{"version":"2024.11.0","token":"4edd5f8ec12a48cfa682ab8261b80a79","spa":2}' crossorigin="anonymous"></script>
 </body>
 </html>
