@@ -274,9 +274,8 @@ function resize(){const w=innerWidth,h=innerHeight;renderer.setSize(w,h,false);c
 addEventListener("resize",resize);resize();
 
 /* 照明(軽量) */
-scene.add(new THREE.HemisphereLight(0xffffff,0x7b8795,1.35));
-scene.add(new THREE.AmbientLight(0xffffff,0.55));
-const sun=new THREE.DirectionalLight(0xffffff,0.9);sun.position.set(20,40,10);scene.add(sun);
+scene.add(new THREE.HemisphereLight(0xfff4e0,0x50565e,0.95));
+const sun=new THREE.DirectionalLight(0xfff0d8,0.7);sun.position.set(20,40,10);scene.add(sun);
 const tutorialLight=new THREE.PointLight(0xffffff,1.2,28);tutorialLight.position.set(-1,4,19);scene.add(tutorialLight);
 
 /* ---------- 店の寸法 ---------- */
