@@ -72,6 +72,7 @@ html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#14161c;fon
  <button id="btnSkill" class="alt">スキル</button>
  <button id="btnShop" class="alt">ショップ</button>
  <button id="btnInfo" class="alt">情報</button>
+ <button id="btnSettings" class="alt">設定</button>
 </div>
 <div id="panel"><button id="panelClose">✕ 閉じる</button><h3 id="panelTitle"></h3><div id="panelBody"></div></div>
 <div id="login"><div id="loginBox">
@@ -92,11 +93,19 @@ if(typeof THREE==="undefined"){document.body.innerHTML="<div style=padding:40px>
 const $=(id)=>document.getElementById(id);
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
 const lerp=(a,b,t)=>a+(b-a)*t;
+const DEBUG_GAME_ERRORS=new URLSearchParams(location.search).get("debug")==="1";
+const reportedGameErrors=new Set();
 function showGameRuntimeError(phase,error){
- const el=document.getElementById("gameRuntimeError");
  const message=error&&error.message?error.message:String(error||"不明なエラー");
+ const key=String(phase)+":"+message;
+ if(reportedGameErrors.has(key))return;
+ reportedGameErrors.add(key);
  console.error("[CM3D "+phase+"]",error);
- if(el){el.style.display="block";el.textContent="ゲーム内部エラー（"+phase+"）\n"+message+"\n画面が表示されない場合は、この内容をそのまま送ってください。";}
+ const el=document.getElementById("gameRuntimeError");
+ if(DEBUG_GAME_ERRORS&&el){el.style.display="block";el.textContent="ゲーム内部エラー（"+phase+"）\n"+message+"\n通常表示では非表示です。";}
+}
+function safeGameStep(name,fn){
+ try{fn()}catch(error){showGameRuntimeError("ゲーム更新/"+name,error)}
 }
 window.addEventListener("error",event=>{
  if(event&&event.message)showGameRuntimeError("JavaScript",event.error||event.message);
@@ -538,7 +547,7 @@ const player={x:-1,z:24.5,feet:0,vy:0,yaw:0,pitch:-0.22};
 const PR=0.35;
 const collide=(x,z)=>{
  if(x<ROOM.x0+0.6||x>ROOM.x1-0.6||z<ROOM.z0+0.6||z>ROOM.z1-0.6)return true;
- if(!S.tutorialDone){const tz=window.__TZ;if(x<tz.x0||x>tz.x1||z<tz.z0||z>tz.z1)return true} /* チュートリアル中は出られない */
+
  for(const b of shelfBBoxes)if(x>b.x0-PR&&x<b.x1+PR&&z>b.z0-PR&&z<b.z1+PR)return true;
  return false;
 };
@@ -550,13 +559,31 @@ addEventListener("keydown",e=>{keys[e.code]=true;
  if(e.code==="Escape")closePanels();
 });
 addEventListener("keyup",e=>{keys[e.code]=false});
-let dragBtn=-1,lastMX=0,lastMY=0;
-canvas.addEventListener("pointerdown",e=>{dragBtn=e.button;lastMX=e.clientX;lastMY=e.clientY;});
-addEventListener("pointerup",()=>{dragBtn=-1});
-addEventListener("pointermove",e=>{
- if(dragBtn>=0){player.yaw-=(e.clientX-lastMX)*0.004;player.pitch=clamp(player.pitch-(e.clientY-lastMY)*0.004,-1.2,1.2);lastMX=e.clientX;lastMY=e.clientY}
+let mouseSensitivity=0.0025;
+try{
+ const savedSensitivity=Number(localStorage.getItem("cm3d_mouse_sensitivity"));
+ if(Number.isFinite(savedSensitivity)&&savedSensitivity>=0.0005&&savedSensitivity<=0.01)mouseSensitivity=savedSensitivity;
+}catch(e){}
+canvas.addEventListener("click",()=>{
+ if(document.pointerLockElement!==canvas){
+  if(typeof canvas.requestPointerLock==="function"){
+   try{
+    const request=canvas.requestPointerLock();
+    if(request&&typeof request.catch==="function")request.catch(()=>toast("マウス視点を開始できませんでした"));
+   }catch(e){toast("このブラウザーではマウス視点を開始できません")}
+  }else toast("このブラウザーはマウス固定に対応していません");
+  return;
+ }
+ if(!mode)interact();
 });
-canvas.addEventListener("click",()=>{if(dragBtn<0)interact()});
+document.addEventListener("mousemove",e=>{
+ if(document.pointerLockElement!==canvas)return;
+ player.yaw-=(e.movementX||0)*mouseSensitivity;
+ player.pitch=clamp(player.pitch-(e.movementY||0)*mouseSensitivity,-1.2,1.2);
+});
+document.addEventListener("pointerlockchange",()=>{
+ if(document.pointerLockElement===canvas)toast("マウス視点ON（Escで解除）");
+});
 
 /* ---------- 手持ち(スプライト表示) ---------- */
 const hands=new THREE.Group();camera.add(hands);
@@ -814,18 +841,43 @@ function navText(){
 function updateHUD(){
  const carryTxt=carry.length?("手持ち "+carry.length+"/"+carryCap()+" → "+[...new Set(carry.map(c=>CATS[PRODUCTS[c.t].c].n))].join("・")):"手持ちなし";
  $("hud").innerHTML="¥"+Math.floor(S.money)+" | 🎫"+S.tickets+" | Lv"+S.level+"("+Math.floor(S.xp)+"/"+xpNeed(S.level)+") AP:"+S.ap+" | 回収 "+S.col+"/"+TOTAL+" | コンボx"+combo+
- "<br><span style='font-weight:400'>"+carryTxt+(navText()?" | 🧭"+navText():"")+"</span><br><span style='font-weight:400;font-size:11px'>WASD移動・右ドラッグ視点・E/クリック交互・G置く・Tゲート</span>";
+ "<br><span style='font-weight:400'>"+carryTxt+(navText()?" | 🧭"+navText():"")+"</span><br><span style='font-weight:400;font-size:11px'>WASD移動・画面クリックでマウス視点開始（Esc解除）・E操作・G置く・Tゲート</span>";
 }
 /* ---------- パネル ---------- */
 let mode="";
 function closePanels(){mode="";$("panel").style.display="none"}
-function openPanel(m){mode=m;const T={skill:"SKILL TREE",shop:"SHOP",info:"INFO"};$("panelTitle").textContent=T[m]||"";renderPanel();$("panel").style.display="block"}
+function openPanel(m){mode=m;const T={skill:"SKILL TREE",shop:"SHOP",info:"INFO",settings:"設定"};$("panelTitle").textContent=T[m]||"";renderPanel();$("panel").style.display="block"}
 $("panelClose").addEventListener("click",closePanels);
 function renderPanel(){
  const p=$("panelBody");
  if(mode==="skill")renderSkill(p);
  else if(mode==="shop")renderShop(p);
  else if(mode==="info")renderInfo(p);
+ else if(mode==="settings")renderSettings(p);
+}
+function renderSettings(p){
+ p.innerHTML="<div style='line-height:1.8'>"+
+  "<b>マウス視点操作</b><p>ゲーム画面を一度クリックするとマウスが固定され、ボタンを押し続けなくてもマウス移動だけで視点が動きます。Escキーで解除できます。</p>"+
+  "<button id='startMouseLook' style='padding:9px 14px;border:0;border-radius:8px;background:#69e6a3;font-weight:800'>マウス視点を開始</button>"+
+  "<hr style='border-color:#8a6a30;margin:14px 0'>"+
+  "<label for='mouseSensitivity'>視点感度: <b id='mouseSensitivityValue'>"+mouseSensitivity.toFixed(4)+"</b></label><br>"+
+  "<input id='mouseSensitivity' type='range' min='0.0005' max='0.01' step='0.0005' value='"+mouseSensitivity+"' style='width:100%'>"+
+  "<p style='font-size:12px;color:#c8b890'>感度はこのブラウザーに保存されます。設定はチュートリアル中もいつでも開けます。</p></div>";
+ const slider=$("mouseSensitivity");
+ slider.addEventListener("input",()=>{
+  mouseSensitivity=Number(slider.value);
+  $("mouseSensitivityValue").textContent=mouseSensitivity.toFixed(4);
+  try{localStorage.setItem("cm3d_mouse_sensitivity",String(mouseSensitivity))}catch(e){}
+ });
+ $("startMouseLook").addEventListener("click",()=>{
+  closePanels();
+  if(typeof canvas.requestPointerLock==="function"){
+   try{
+    const request=canvas.requestPointerLock();
+    if(request&&typeof request.catch==="function")request.catch(()=>toast("マウス視点を開始できませんでした"));
+   }catch(e){toast("マウス視点を開始できませんでした")}
+  }else toast("このブラウザーはマウス固定に対応していません");
+ });
 }
 /* スキルツリー(RPG風・木造銅色UI) */
 const SKILLS=[
@@ -932,9 +984,10 @@ $("btnShop").addEventListener("click",()=>{
  if(S.level<10){toast("ショップはLv10で解放!");return}
  openPanel("shop")});
 $("btnInfo").addEventListener("click",()=>openPanel("info"));
+$("btnSettings").addEventListener("click",()=>openPanel("settings"));
 
 /* ---------- チュートリアル ---------- */
-const TUT=["WASD/矢印で動こう(このエリアから出られない)","点滅する商品をE/クリックで拾う(Gで置き直しもできる)","青い棚まで運んでEで収納!","スキル画面を開いて完了!"];
+const TUT=["WASD/矢印で自由に店内を移動しよう","点滅する商品をEで拾う(Gで置き直しもできる)","青い棚まで運んでEで収納!","スキル画面を開いて完了!"];
 let tutStep=0;
 function updateTut(){
  if(S.tutorialDone){$("tut").style.display="none";return}
@@ -1014,26 +1067,29 @@ function loop(){
     takeInstance(it.t,it.idx,1);carry.push({t:it.t});S.col++;syncHeld();saveDirty=true;
    }
   }
-  updateMachines(dt);
-  updateTut();updateHUD();drawMinimap();
-  /* 照準プロンプト+レア */
+ }catch(updateError){
+  showGameRuntimeError("ゲーム更新/移動",updateError);
+ }
+ safeGameStep("設備",()=>updateMachines(dt));
+ safeGameStep("チュートリアル",updateTut);
+ safeGameStep("HUD",updateHUD);
+ safeGameStep("ミニマップ",drawMinimap);
+ safeGameStep("照準",()=>{
   const a=aimTarget();
   let prompt="";
   if(a&&a.kind==="item"){
    let rr=null;
    for(const r of rareMeshes)if(!r.taken&&Math.hypot(r.x-player.x,r.z-player.z)<magnet()){rr=r;break}
    if(rr){
-    prompt="✨"+RARES[rr.ri].n+":"+RARES[rr.ri].d+"(E/クリックで獲得)";
+    prompt="✨"+RARES[rr.ri].n+":"+RARES[rr.ri].d+"(Eで獲得)";
     if(keys.KeyE&&!keys.__rrl){takeRare(rr);keys.__rrl=true}else if(!keys.KeyE)keys.__rrl=false;
-   }else prompt="E/クリックで回収: "+PRODUCTS[a.it.t].n;
-  }else if(a&&a.kind==="shelf")prompt="E/クリックで収納: "+a.sh.name+"(収納"+a.sh.stored.length+"個)";
-  else if(a&&a.kind==="gacha")prompt="E/クリックでガチャ(券"+S.tickets+")";
-  else if(a&&a.kind==="drop")prompt="E/クリックで拾う: "+PRODUCTS[drops[a.di].t].n;
+   }else prompt="Eで回収: "+PRODUCTS[a.it.t].n;
+  }else if(a&&a.kind==="shelf")prompt="Eで収納: "+a.sh.name+"(収納"+a.sh.stored.length+"個)";
+  else if(a&&a.kind==="gacha")prompt="Eでガチャ(券"+S.tickets+")";
+  else if(a&&a.kind==="drop")prompt="Eで拾う: "+PRODUCTS[drops[a.di].t].n;
+  else if(document.pointerLockElement!==canvas)prompt="画面を一度クリックするとマウス視点操作（Escで解除）";
   $("prompt").textContent=prompt;
- }catch(updateError){
-  // 更新側に不具合があっても描画処理は止めない。
-  showGameRuntimeError("ゲーム更新",updateError);
- }
+ });
  /* カメラ更新と描画はゲーム更新とは分離して、毎フレーム必ず実行する。 */
  try{
   camera.position.set(player.x,1.6,player.z);
@@ -1105,8 +1161,20 @@ async function startGame(loaded,alreadyLoaded=false){
  loop();
 }
 function applySave(d){
- S={...fresh(),...d};
- S.drops&&S.drops.forEach(dd=>{const m=dropMesh(dd.t);m.position.set(dd.x,0.2,dd.z);scene.add(m);drops.push({t:dd.t,x:dd.x,z:dd.z,mesh:m})});
+ const base=fresh(),data=d&&typeof d==="object"?d:{};
+ S={...base,...data,
+  skills:data.skills&&typeof data.skills==="object"&&!Array.isArray(data.skills)?{...data.skills}:{},
+  machines:data.machines&&typeof data.machines==="object"&&!Array.isArray(data.machines)?{...data.machines}:{},
+  gk:Array.isArray(data.gk)?data.gk:base.gk,
+  titles:Array.isArray(data.titles)?data.titles:base.titles,
+  drops:Array.isArray(data.drops)?data.drops:[],
+  missions:data.missions&&typeof data.missions==="object"?data.missions:base.missions
+ };
+ S.drops.forEach(dd=>{
+  if(!dd||!Number.isInteger(Number(dd.t))||!Number.isFinite(Number(dd.x))||!Number.isFinite(Number(dd.z)))return;
+  const t=clamp(Number(dd.t),0,PRODUCTS.length-1),x=Number(dd.x),z=Number(dd.z);
+  const m=dropMesh(t);m.position.set(x,0.2,z);scene.add(m);drops.push({t,x,z,mesh:m});
+ });
  buildMachines();
 }
 /* 起動 */
@@ -1119,34 +1187,12 @@ function applySave(d){
   camera.rotation.set(player.pitch,player.yaw,0,"YXZ");
   renderer.render(scene,camera);
  }catch(initialRenderError){showGameRuntimeError("初期3D描画",initialRenderError)}
- let t="",u="";
- try{t=localStorage.getItem("cm3d_token")||"";u=localStorage.getItem("cm3d_user")||""}catch(e){}
- if(new URLSearchParams(location.search).get("guest")==="1"){
-  AUTH.guest=true;AUTH.user="ゲスト";
-  try{await startGame(null)}catch(e){showLogin("ゲスト起動に失敗しました。\n"+(e&&e.message||e))}
-  return;
- }
- if(t&&API_BASE){
-  AUTH.token=t;AUTH.user=u||"ユーザー";
-  try{
-   const d=await cloudLoad();
-   await startGame(d,true);
-  }catch(e){
-   console.warn("[saved login validation error]",e);
-   if(isAuthError(e)){
-    clearSavedLoginInfo();
-    AUTH.token=null;AUTH.user=null;
-    showLogin("保存されていたログイン情報が無効になっています。再ログインしてください。\n"+e.message);
-   }else{
-    // 一時的な通信障害ではトークンを消さない。再ログイン可能な状態で詳細を表示。
-    AUTH.token=null;AUTH.user=null;
-    showLogin("前回のログイン状態を確認できませんでした。通信状態を確認して再ログインしてください。\n"+e.message);
-   }
-  }
- }else{
-  if(!t&&u)clearSavedLoginInfo();
-  showLogin();
- }
+ let savedUser="";
+ try{savedUser=localStorage.getItem("cm3d_user")||""}catch(e){}
+ if(savedUser)$("user").value=savedUser;
+ // 保存済みトークンがあっても自動ログインせず、毎回ログイン画面から開始する。
+ AUTH.token=null;AUTH.user=null;AUTH.guest=false;
+ showLogin("ログインまたは新規登録してゲームを開始してください。");
  }catch(bootError){
   showGameRuntimeError("起動",bootError);
   // 店舗構築が途中で失敗しても、構築済みのシーンを描画して診断可能にする。
