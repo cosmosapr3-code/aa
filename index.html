@@ -133,7 +133,7 @@ async function apiRequest(path,options={}){
   response=await fetch(url,{...options,headers});
  }catch(e){
   const detail=e&&e.message?e.message:String(e);
-  throw makeApiError("サーバーに接続できませんでした。\n接続先: "+url+"\n詳細: "+detail+"\nWorkerのCORS設定、URL、通信状態を確認してください。",0,path,"");
+  throw makeApiError("サーバーに接続できませんでした。\n接続先: "+url+"\n詳細: "+detail+"\nブラウザが応答を受け取れていません。WorkerのAccess-Control-Allow-Origin設定、OPTIONS応答、URL、通信状態を確認してください。\n※ログインのOPTIONS事前確認は回避する設定にしましたが、Workerの実際のPOST応答にもCORSヘッダーが必要です。",0,path,"");
  }
  let raw="";
  try{raw=await response.text()}catch(e){
@@ -151,10 +151,13 @@ async function apiRequest(path,options={}){
  return payload;
 }
 async function apiRegister(u,p){
- return await apiRequest("/api/register",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({user:u,pass:p})});
+ // text/plain は CORS の simple request に該当し、Content-Type が原因の
+ // OPTIONS 事前リクエストを避けられる。Worker 側は request.json() で本文を読む。
+ return await apiRequest("/api/register",{method:"POST",headers:{"Content-Type":"text/plain;charset=UTF-8"},body:JSON.stringify({user:u,pass:p})});
 }
 async function apiLogin(u,p){
- return await apiRequest("/api/login",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({user:u,pass:p})});
+ // JSON文字列の本文は維持しつつ、ログイン時の不要な CORS preflight を回避する。
+ return await apiRequest("/api/login",{method:"POST",headers:{"Content-Type":"text/plain;charset=UTF-8"},body:JSON.stringify({user:u,pass:p})});
 }
 async function apiSave(data){
  return await apiRequest("/api/save",{method:"POST",headers:authHeaders(),body:JSON.stringify({data})});
