@@ -94,7 +94,7 @@ function mulberry32(s){return function(){s|=0;s=s+0x6D2B79F5|0;let t=Math.imul(s
 const rng=mulberry32(20261126);
 
 /* ---------- クラウド(API_URLはWorkerデプロイ後に貼り替え) ---------- */
-const API_URL="https://cleanup-master-save.cm3d-sav.workers.dev";
+const API_URL="https://aa.cleangame.workers.dev/";
 const AUTH={user:null,token:null,guest:false};
 function authHeaders(){return{"Content-Type":"application/json",Authorization:"Bearer "+(AUTH.token||"")}}
 async function apiRegister(u,p){const r=await fetch(API_URL+"/api/register",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({user:u,pass:p})});const d=await r.json().catch(()=>({}));if(!r.ok||!d.ok)throw new Error(d.error||"登録に失敗しました");return d}
