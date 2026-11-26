@@ -120,7 +120,7 @@ function responseErrorMessage(payload,raw,status,statusText,url,method,path){
  }
  if(!message&&typeof payload==="string")message=payload;
  if(!message&&Number(status)===404){
-  message="Workerには接続できましたが、このAPIルートが見つかりません。デプロイ中のWorkerに「"+(method||"POST").toUpperCase()+" "+path+"」が実装されているか確認してください。";
+  message="Workerには到達しましたが、デプロイ中のWorkerがこのAPIルートを処理していません。HTMLのURL組み立てではなく、Worker側のルート定義・デプロイ版を確認してください。必要なルート: 「"+(method||"POST").toUpperCase()+" "+path+"」。";
  }else if(!message&&Number(status)===405){
   message="APIルートは存在しますが、このHTTPメソッドは許可されていません。Worker側のメソッド判定を確認してください。";
  }else if(!message){
@@ -238,7 +238,8 @@ renderer.shadowMap.enabled=false;
 const scene=new THREE.Scene();
 scene.background=new THREE.Color(0x14161c);
 scene.fog=new THREE.Fog(0x14161c,55,120);
-const camera=new THREE.PerspectiveCamera(72,1,0.1,200);
+const camera=new THREE.PerspectiveCamera(78,1,0.1,200);
+camera.rotation.order="YXZ";
 scene.add(camera);
 function resize(){const w=innerWidth,h=innerHeight;renderer.setSize(w,h,false);camera.aspect=w/h;camera.updateProjectionMatrix()}
 addEventListener("resize",resize);resize();
@@ -501,7 +502,9 @@ const moneyMult=()=>(1+0.05*L("office"))*(1+0.15*L("gold"))*(1+0.03*sk("price"))
 const xpNeed=(l)=>Math.floor(50*Math.pow(l,1.6));
 
 /* ---------- プレイヤー ---------- */
-const player={x:0,z:24,feet:0,vy:0,yaw:Math.PI,pitch:0};
+// チュートリアル商品は z=20 付近に配置されるため、開始時は店内(-Z方向)を向く。
+// 以前の yaw=Math.PI は入口(+Z方向)を向き、商品が背後になって暗い外側を見ていた。
+const player={x:-1,z:24.5,feet:0,vy:0,yaw:0,pitch:0};
 const PR=0.35;
 const collide=(x,z)=>{
  if(x<ROOM.x0+0.6||x>ROOM.x1-0.6||z<ROOM.z0+0.6||z>ROOM.z1-0.6)return true;
