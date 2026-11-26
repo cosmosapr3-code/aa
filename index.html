@@ -441,7 +441,10 @@ const chunkMesh=new Map();                      /* ck_t -> InstancedMesh */
 const typeCount=new Array(TYPES).fill(0);
 const shelfBBoxes=[];
 function inShelf(x,z){for(const b of shelfBBoxes)if(x>b.x0-0.2&&x<b.x1+0.2&&z>b.z0-0.2&&z<b.z1+0.2)return true;return false}
+const CELL=2,cellGrid=new Map();
+const ckOfCell=(x,z)=>Math.floor((x+50)/CELL)+"_"+Math.floor((z+30)/CELL);
 function placeAll(){
+ cellGrid.clear();
  shelfBBoxes.length=0;for(const s of shelves)shelfBBoxes.push(s.bbox);
  /* カテゴリ別ゾーン:各棚の周辺に現実的な散らかり方(クラスタ) */
  const zoneOf=CATS.map((c,ci)=>shelves.filter(s=>s.cat===ci));
@@ -475,8 +478,6 @@ function placeAll(){
   }
  }
  /* チャンク×タイプごとにInstancedMesh生成+空間セルグリッド構築 */
- const CELL=2,cellGrid=new Map();
- const ckOfCell=(x,z)=>Math.floor((x+50)/CELL)+"_"+Math.floor((z+30)/CELL);
  window.__cellApi={cellGrid,ckOfCell};
  const m4=new THREE.Matrix4();
  for(const [ck,arr] of chunkMap){
