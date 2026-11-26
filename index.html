@@ -55,7 +55,7 @@ html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#14161c;fon
 #loginBox input{width:90%;padding:10px;margin:6px 0;border-radius:8px;border:2px solid #8a6a30;background:#1a1208;color:#fff;font-size:16px;box-sizing:border-box}
 #loginBox button{width:94%;padding:10px;margin:4px 0;border-radius:8px;border:0;font-weight:800;cursor:pointer;font-size:15px}
 #loginBtn{background:#69e6a3}#regBtn{background:#5aa0e8}#guestBtn{background:#666f7a;color:#fff}
-#loginMsg{color:#ff8080;min-height:20px;font-size:13px}
+#loginMsg{color:#ffb0a8;min-height:20px;font-size:12px;line-height:1.55;white-space:pre-wrap;overflow-wrap:anywhere;text-align:left;max-height:180px;overflow:auto;margin:8px 4px}
 .note{font-size:11px;color:#b0a890;margin-top:8px;line-height:1.5}
 </style>
 </head>
@@ -81,7 +81,7 @@ html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#14161c;fon
  <button id="loginBtn">ログイン</button>
  <button id="regBtn">新規登録</button>
  <button id="guestBtn">ゲストで遊ぶ(保存なし)</button>
- <div class="note" id="apiNote">サーバー未設定(API_URL空)の場合はオフライン保存(localStorage)で動きます。デプロイ後にAPI_URLを書き換えてください。</div>
+ <div class="note" id="apiNote">接続先: https://aa.cleangame.workers.dev/ ／ 登録・ログイン時のサーバーエラー詳細をここに表示します。</div>
 </div></div>
 <script>
 if(typeof THREE==="undefined"){document.body.innerHTML="<div style=padding:40px>three.jsの読み込みに失敗しました</div>";}else{(function(){
@@ -93,14 +93,103 @@ const lerp=(a,b,t)=>a+(b-a)*t;
 function mulberry32(s){return function(){s|=0;s=s+0x6D2B79F5|0;let t=Math.imul(s^s>>>15,1|s);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
 const rng=mulberry32(20261126);
 
-/* ---------- クラウド(API_URLはWorkerデプロイ後に貼り替え) ---------- */
+/* ---------- クラウドAPI / 認証 ---------- */
+// 末尾の / を除去してからパスを追加する。//api/register の発生を防止。
 const API_URL="https://aa.cleangame.workers.dev/";
+const API_BASE=String(API_URL||"").trim().replace(/\/+$/,"");
 const AUTH={user:null,token:null,guest:false};
-function authHeaders(){return{"Content-Type":"application/json",Authorization:"Bearer "+(AUTH.token||"")}}
-async function apiRegister(u,p){const r=await fetch(API_URL+"/api/register",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({user:u,pass:p})});const d=await r.json().catch(()=>({}));if(!r.ok||!d.ok)throw new Error(d.error||"登録に失敗しました");return d}
-async function apiLogin(u,p){const r=await fetch(API_URL+"/api/login",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({user:u,pass:p})});const d=await r.json().catch(()=>({}));if(!r.ok||!d.ok)throw new Error(d.error||"ログインに失敗しました");return d}
-async function apiSave(data){const r=await fetch(API_URL+"/api/save",{method:"POST",headers:authHeaders(),body:JSON.stringify({data})});const d=await r.json().catch(()=>({}));if(!r.ok||!d.ok)throw new Error(d.error||"保存に失敗しました");return d}
-async function apiLoad(){const r=await fetch(API_URL+"/api/load",{headers:authHeaders()});const d=await r.json().catch(()=>({}));if(!r.ok||!d.ok)throw new Error(d.error||"読み込みに失敗しました");return d}
+function apiUrl(path){
+ if(!API_BASE)throw new Error("API_URLが設定されていません。");
+ return API_BASE+"/"+String(path||"").replace(/^\/+/,"");
+}
+function authHeaders(){
+ return {"Content-Type":"application/json",Accept:"application/json",Authorization:"Bearer "+(AUTH.token||"")};
+}
+function makeApiError(message,status,path,body){
+ const e=new Error(message);
+ e.status=Number(status)||0;
+ e.apiPath=path||"";
+ e.responseBody=body||"";
+ return e;
+}
+function responseErrorMessage(payload,raw,status,statusText,path){
+ let message="";
+ if(payload&&typeof payload==="object"){
+  message=payload.error||payload.message||payload.detail||payload.reason||"";
+  if(typeof message!=="string")message=JSON.stringify(message);
+ }
+ if(!message&&typeof payload==="string")message=payload;
+ if(!message)message="サーバーからエラー内容が返されませんでした。";
+ const parts=[message,"HTTP "+status+(statusText?" "+statusText:""),"接続先: "+path];
+ if(raw&&(!payload||typeof payload!=="object"||!payload.error&&!payload.message&&!payload.detail&&!payload.reason))parts.push("応答本文: "+raw.slice(0,700));
+ return parts.join("\n");
+}
+async function apiRequest(path,options={}){
+ const url=apiUrl(path);
+ const headers={Accept:"application/json",...(options.headers||{})};
+ if(options.body!==undefined&&!Object.keys(headers).some(k=>k.toLowerCase()==="content-type"))headers["Content-Type"]="application/json";
+ let response;
+ try{
+  response=await fetch(url,{...options,headers});
+ }catch(e){
+  const detail=e&&e.message?e.message:String(e);
+  throw makeApiError("サーバーに接続できませんでした。\n接続先: "+url+"\n詳細: "+detail+"\nWorkerのCORS設定、URL、通信状態を確認してください。",0,path,"");
+ }
+ let raw="";
+ try{raw=await response.text()}catch(e){
+  throw makeApiError("サーバー応答を読み取れませんでした。\nHTTP "+response.status+"\n接続先: "+url, response.status,path,"");
+ }
+ let payload={};
+ if(raw){
+  try{payload=JSON.parse(raw)}catch(e){
+   throw makeApiError("サーバー応答がJSONではありません。\nHTTP "+response.status+"\n接続先: "+url+"\n応答本文: "+raw.slice(0,700),response.status,path,raw);
+  }
+ }
+ if(!response.ok||(payload&&typeof payload==="object"&&(payload.ok===false||(!payload.ok&&payload.error)))){
+  throw makeApiError(responseErrorMessage(payload,raw,response.status,response.statusText,path),response.status,path,raw);
+ }
+ return payload;
+}
+async function apiRegister(u,p){
+ return await apiRequest("/api/register",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({user:u,pass:p})});
+}
+async function apiLogin(u,p){
+ return await apiRequest("/api/login",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({user:u,pass:p})});
+}
+async function apiSave(data){
+ return await apiRequest("/api/save",{method:"POST",headers:authHeaders(),body:JSON.stringify({data})});
+}
+async function apiLoad(){
+ return await apiRequest("/api/load",{method:"GET",headers:authHeaders()});
+}
+function extractAuthToken(result){
+ if(!result||typeof result!=="object")return "";
+ return result.token||result.accessToken||result.access_token||
+  (result.data&&(result.data.token||result.data.accessToken||result.data.access_token))||
+  (result.session&&result.session.token)||"";
+}
+function persistAuth(user,token){
+ if(!token)throw new Error("認証トークンが空のためログイン状態を保存できません。");
+ AUTH.user=user;AUTH.token=token;AUTH.guest=false;
+ try{
+  localStorage.setItem("cm3d_token",token);
+  localStorage.setItem("cm3d_user",user);
+ }catch(e){
+  throw new Error("ログインは成功しましたが、ブラウザーにログイン情報を保存できませんでした。ブラウザーのストレージ設定を確認してください。詳細: "+(e&&e.message||e));
+ }
+}
+function clearSavedLoginInfo(){
+ try{localStorage.removeItem("cm3d_token")}catch(e){}
+ try{localStorage.removeItem("cm3d_user")}catch(e){}
+}
+function isAuthError(error){
+ const message=String(error&&error.message||error||"");
+ return !!(error&&(error.status===401||error.status===403))||/ログインが必要|認証(エラー|に失敗|が必要)|token.{0,20}(invalid|expired)|invalid token|unauthorized|401|403/i.test(message);
+}
+function readOfflineSave(){
+ try{const raw=localStorage.getItem("cm3d_offline");return raw?JSON.parse(raw):null}
+ catch(e){console.warn("[offline save read error]",e);return null}
+}
 
 /* ---------- セーブ状態 ---------- */
 const fresh=()=>({v:3,money:0,xp:0,level:1,ap:0,skills:{},machines:{},gk:Array(15).fill(0),tickets:2,col:0,stored:0,found:[],titles:Array(6).fill(false),missions:{claimed:{}},rareFound:0,tutorialDone:false,prestige:0,time:0,drops:[],name:""});
@@ -842,10 +931,12 @@ async function cloudSave(){
  }catch(e){toast("保存失敗:"+e.message)}
 }
 async function cloudLoad(){
- if(AUTH.token&&!AUTH.guest&&API_URL){
-  try{const d=await apiLoad();if(d&&d.data)return d.data}catch(e){}
+ if(AUTH.token&&!AUTH.guest&&API_BASE){
+  // 認証済みなのにAPIが失敗した場合、エラーを握りつぶさず呼び出し元へ返す。
+  const d=await apiLoad();
+  if(d&&Object.prototype.hasOwnProperty.call(d,"data")&&d.data)return d.data;
  }
- try{const r=localStorage.getItem("cm3d_offline");return r?JSON.parse(r):null}catch(e){return null}
+ return readOfflineSave();
 }
 setInterval(()=>{if(saveDirty&&Date.now()-lastSave>30000)cloudSave()},15000);
 addEventListener("visibilitychange",()=>{if(document.hidden&&saveDirty)cloudSave()});
@@ -896,36 +987,63 @@ function loop(){
 }
 
 /* ---------- ログイン画面 ---------- */
-function showLogin(){
+let gameStarted=false;
+function setLoginMessage(message){
+ const el=$("loginMsg");
+ if(el)el.textContent=String(message||"");
+}
+function showLogin(message=""){
  $("login").style.display="flex";
- $("regBtn").addEventListener("click",async()=>{
-  if(!API_URL){$("loginMsg").textContent="サーバー未設定です。まずはゲストで遊べます(デプロイ後にAPI_URLを設定)";return}
+ if(message)setLoginMessage(message);
+ const regBtn=$("regBtn"),loginBtn=$("loginBtn"),guestBtn=$("guestBtn");
+ // showLoginが再度呼ばれてもイベントを重複登録しない。
+ if(showLogin.handlersAttached)return;
+ showLogin.handlersAttached=true;
+ async function accountAction(mode){
+  if(!API_BASE){setLoginMessage("API_URLが設定されていません。WorkerのURLを設定してください。");return}
+  const user=$("user").value.trim(),pass=$("pass").value;
+  if(!user||pass.length<4){setLoginMessage("ユーザー名と4文字以上のパスワードを入力してください。");return}
+  regBtn.disabled=true;loginBtn.disabled=true;guestBtn.disabled=true;
+  setLoginMessage(mode==="register"?"新規登録中...":"ログイン中...");
+  let authSucceeded=false;
   try{
-   const u=$("user").value.trim(),p=$("pass").value;
-   if(!u||p.length<4){$("loginMsg").textContent="ユーザー名と4文字以上のパスワードを入れてね";return}
-   const d=await apiRegister(u,p);AUTH.user=u;AUTH.token=d.token;
-   localStorage.setItem("cm3d_token",d.token);localStorage.setItem("cm3d_user",u);
-   startGame(null);
-  }catch(e){$("loginMsg").textContent=e.message}
- });
- $("loginBtn").addEventListener("click",async()=>{
-  if(!API_URL){$("loginMsg").textContent="サーバー未設定です。まずはゲストで遊べます(デプロイ後にAPI_URLを設定)";return}
-  try{
-   const u=$("user").value.trim(),p=$("pass").value;
-   const d=await apiLogin(u,p);AUTH.user=u;AUTH.token=d.token;
-   localStorage.setItem("cm3d_token",d.token);localStorage.setItem("cm3d_user",u);
-   startGame(null);
-  }catch(e){$("loginMsg").textContent=e.message}
- });
- $("guestBtn").addEventListener("click",()=>{
-  AUTH.guest=true;AUTH.user="ゲスト";startGame(null);
+   const result=mode==="register"?await apiRegister(user,pass):await apiLogin(user,pass);
+   const token=extractAuthToken(result);
+   if(!token){
+    const keys=result&&typeof result==="object"?Object.keys(result).join(", "):typeof result;
+    throw new Error("サーバー応答に認証トークン(token)がありません。Workerの /api/"+(mode==="register"?"register":"login")+" の戻り値を確認してください。\n受信した項目: "+(keys||"なし"));
+   }
+   authSucceeded=true;
+   persistAuth(user,String(token));
+   setLoginMessage("認証成功。セーブデータを確認しています...");
+   await startGame(null);
+  }catch(e){
+   console.error(mode==="register"?"[register error]":"[login error]",e);
+   const heading=authSucceeded?"認証は成功しましたが、ゲーム開始またはセーブデータの読み込みに失敗しました。":(mode==="register"?"登録に失敗しました":"ログインに失敗しました");
+   if(authSucceeded&&isAuthError(e)){clearSavedLoginInfo();AUTH.token=null;AUTH.user=null}
+   setLoginMessage(heading+"\n"+(e&&e.message?e.message:String(e)));
+  }finally{
+   regBtn.disabled=false;loginBtn.disabled=false;guestBtn.disabled=false;
+  }
+ }
+ regBtn.addEventListener("click",()=>accountAction("register"));
+ loginBtn.addEventListener("click",()=>accountAction("login"));
+ guestBtn.addEventListener("click",async()=>{
+  regBtn.disabled=true;loginBtn.disabled=true;guestBtn.disabled=true;
+  AUTH.guest=true;AUTH.token=null;AUTH.user="ゲスト";
+  try{await startGame(null)}
+  catch(e){setLoginMessage("ゲスト起動に失敗しました。\n"+(e&&e.message||e))}
+  finally{regBtn.disabled=false;loginBtn.disabled=false;guestBtn.disabled=false}
  });
 }
-async function startGame(loaded){
+async function startGame(loaded,alreadyLoaded=false){
+ if(gameStarted)return;
+ // ロードを完了してからログイン画面を閉じる。API失敗時はログイン画面に詳細を残す。
+ const data=alreadyLoaded?loaded:(loaded||await cloudLoad());
+ if(data&&data.v===3)applySave(data);
+ gameStarted=true;
  $("login").style.display="none";
- if(loaded)applySave(loaded);
- else{const d=await cloudLoad();if(d&&d.v===3)applySave(d)}
- toast("ようこそ、"+AUTH.user+"さん!");
+ toast("ようこそ、"+(AUTH.user||"ゲスト")+"さん!");
  loop();
 }
 function applySave(d){
@@ -936,10 +1054,34 @@ function applySave(d){
 /* 起動 */
 (async function boot(){
  buildStore();placeAll();placeRares();placeInitStock();placeTutItems();buildMachines();
-  const t=localStorage.getItem("cm3d_token"),u=localStorage.getItem("cm3d_user");
-  if(new URLSearchParams(location.search).get("guest")==="1"){AUTH.guest=true;AUTH.user="ゲスト";startGame(null);return}
-  if(t&&API_URL){AUTH.token=t;AUTH.user=u;const d=await cloudLoad();startGame(d||null)}
-  else showLogin();
+ let t="",u="";
+ try{t=localStorage.getItem("cm3d_token")||"";u=localStorage.getItem("cm3d_user")||""}catch(e){}
+ if(new URLSearchParams(location.search).get("guest")==="1"){
+  AUTH.guest=true;AUTH.user="ゲスト";
+  try{await startGame(null)}catch(e){showLogin("ゲスト起動に失敗しました。\n"+(e&&e.message||e))}
+  return;
+ }
+ if(t&&API_BASE){
+  AUTH.token=t;AUTH.user=u||"ユーザー";
+  try{
+   const d=await cloudLoad();
+   await startGame(d,true);
+  }catch(e){
+   console.warn("[saved login validation error]",e);
+   if(isAuthError(e)){
+    clearSavedLoginInfo();
+    AUTH.token=null;AUTH.user=null;
+    showLogin("保存されていたログイン情報が無効になっています。再ログインしてください。\n"+e.message);
+   }else{
+    // 一時的な通信障害ではトークンを消さない。再ログイン可能な状態で詳細を表示。
+    AUTH.token=null;AUTH.user=null;
+    showLogin("前回のログイン状態を確認できませんでした。通信状態を確認して再ログインしてください。\n"+e.message);
+   }
+  }
+ }else{
+  if(!t&&u)clearSavedLoginInfo();
+  showLogin();
+ }
 })();
 /* ミッションAPI連携(TERRA CARD用・URLパラメータ) */
 if(new URLSearchParams(location.search).get("cm3d_reward")==="1"){
