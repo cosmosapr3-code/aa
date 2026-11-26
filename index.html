@@ -81,7 +81,7 @@ html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#14161c;fon
  <button id="loginBtn">ログイン</button>
  <button id="regBtn">新規登録</button>
  <button id="guestBtn">ゲストで遊ぶ(保存なし)</button>
- <div class="note" id="apiNote">接続先: https://aa.cleangame.workers.dev/ ／ 登録・ログイン時のサーバーエラー詳細をここに表示します。</div>
+ <div class="note" id="apiNote">Worker: https://aa.cleangame.workers.dev ／ 登録: POST /api/register ／ ログイン: POST /api/login</div>
 </div></div>
 <script>
 if(typeof THREE==="undefined"){document.body.innerHTML="<div style=padding:40px>three.jsの読み込みに失敗しました</div>";}else{(function(){
@@ -112,16 +112,22 @@ function makeApiError(message,status,path,body){
  e.responseBody=body||"";
  return e;
 }
-function responseErrorMessage(payload,raw,status,statusText,path){
+function responseErrorMessage(payload,raw,status,statusText,url,method,path){
  let message="";
  if(payload&&typeof payload==="object"){
   message=payload.error||payload.message||payload.detail||payload.reason||"";
   if(typeof message!=="string")message=JSON.stringify(message);
  }
  if(!message&&typeof payload==="string")message=payload;
- if(!message)message="サーバーからエラー内容が返されませんでした。";
- const parts=[message,"HTTP "+status+(statusText?" "+statusText:""),"接続先: "+path];
- if(raw&&(!payload||typeof payload!=="object"||!payload.error&&!payload.message&&!payload.detail&&!payload.reason))parts.push("応答本文: "+raw.slice(0,700));
+ if(!message&&Number(status)===404){
+  message="Workerには接続できましたが、このAPIルートが見つかりません。デプロイ中のWorkerに「"+(method||"POST").toUpperCase()+" "+path+"」が実装されているか確認してください。";
+ }else if(!message&&Number(status)===405){
+  message="APIルートは存在しますが、このHTTPメソッドは許可されていません。Worker側のメソッド判定を確認してください。";
+ }else if(!message){
+  message="サーバーからエラー内容が返されませんでした。";
+ }
+ const parts=[message,"HTTP "+status+(statusText?" "+statusText:""),"送信方法: "+(method||"GET"),"実際の接続先: "+url,"APIパス: "+path];
+ parts.push("応答本文: "+(raw?raw.slice(0,700):"(空の応答本文)"));
  return parts.join("\n");
 }
 async function apiRequest(path,options={}){
@@ -146,7 +152,7 @@ async function apiRequest(path,options={}){
   }
  }
  if(!response.ok||(payload&&typeof payload==="object"&&(payload.ok===false||(!payload.ok&&payload.error)))){
-  throw makeApiError(responseErrorMessage(payload,raw,response.status,response.statusText,path),response.status,path,raw);
+  throw makeApiError(responseErrorMessage(payload,raw,response.status,response.statusText,url,options.method||"GET",path),response.status,path,raw);
  }
  return payload;
 }
