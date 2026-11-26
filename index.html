@@ -15,7 +15,7 @@
 </script>
 <style>
 html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#14161c;font:15px system-ui;color:#eee}
-#c{display:block;width:100%;height:100%}
+#c{position:fixed;inset:0;display:block;width:100%;height:100%;z-index:0;background:#8da5b5}
 #hud{position:fixed;left:8px;top:8px;right:180px;pointer-events:none;font:700 13px system-ui;color:#fff;text-shadow:0 1px 3px #000;z-index:5;line-height:1.5}
 #prompt{position:fixed;left:50%;top:56%;transform:translateX(-50%);pointer-events:none;font:700 16px system-ui;color:#ffe14a;text-shadow:0 2px 4px #000;z-index:5}
 #tut{position:fixed;left:50%;top:62%;transform:translateX(-50%);pointer-events:none;font:700 15px system-ui;color:#7fe0ff;background:#101820cc;padding:8px 14px;border-radius:10px;z-index:5}
@@ -56,6 +56,7 @@ html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#14161c;fon
 #loginBox button{width:94%;padding:10px;margin:4px 0;border-radius:8px;border:0;font-weight:800;cursor:pointer;font-size:15px}
 #loginBtn{background:#69e6a3}#regBtn{background:#5aa0e8}#guestBtn{background:#666f7a;color:#fff}
 #loginMsg{color:#ffb0a8;min-height:20px;font-size:12px;line-height:1.55;white-space:pre-wrap;overflow-wrap:anywhere;text-align:left;max-height:180px;overflow:auto;margin:8px 4px}
+#gameRuntimeError{display:none;position:fixed;left:10px;right:10px;bottom:10px;z-index:10000;background:#541d1df2;color:#fff;border:2px solid #ff8a70;border-radius:10px;padding:10px 12px;font:13px/1.5 system-ui;white-space:pre-wrap;overflow-wrap:anywhere;max-height:32vh;overflow:auto}
 .note{font-size:11px;color:#b0a890;margin-top:8px;line-height:1.5}
 </style>
 </head>
@@ -65,6 +66,7 @@ html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#14161c;fon
 <div id="prompt"></div>
 <div id="tut" style="display:none"></div>
 <div id="toast"></div>
+<div id="gameRuntimeError" role="alert"></div>
 <canvas id="minimap" width="168" height="101"></canvas>
 <div class="btnbar">
  <button id="btnSkill" class="alt">スキル</button>
@@ -90,6 +92,18 @@ if(typeof THREE==="undefined"){document.body.innerHTML="<div style=padding:40px>
 const $=(id)=>document.getElementById(id);
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
 const lerp=(a,b,t)=>a+(b-a)*t;
+function showGameRuntimeError(phase,error){
+ const el=document.getElementById("gameRuntimeError");
+ const message=error&&error.message?error.message:String(error||"不明なエラー");
+ console.error("[CM3D "+phase+"]",error);
+ if(el){el.style.display="block";el.textContent="ゲーム内部エラー（"+phase+"）\n"+message+"\n画面が表示されない場合は、この内容をそのまま送ってください。";}
+}
+window.addEventListener("error",event=>{
+ if(event&&event.message)showGameRuntimeError("JavaScript",event.error||event.message);
+});
+window.addEventListener("unhandledrejection",event=>{
+ showGameRuntimeError("非同期処理",event.reason||"Promise rejection");
+});
 function mulberry32(s){return function(){s|=0;s=s+0x6D2B79F5|0;let t=Math.imul(s^s>>>15,1|s);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
 const rng=mulberry32(20261126);
 
@@ -232,21 +246,38 @@ const RARES=[
 /* ---------- three.js 基本 ---------- */
 const THREE_OK=typeof THREE!=="undefined";
 const canvas=$("c");
-const renderer=new THREE.WebGLRenderer({canvas,antialias:false,powerPreference:"high-performance"});
-renderer.setPixelRatio(Math.min(devicePixelRatio,1.5));
+let renderer;
+try{
+ renderer=new THREE.WebGLRenderer({canvas,antialias:false,powerPreference:"high-performance"});
+}catch(webglError){
+ const msg=webglError&&webglError.message?webglError.message:String(webglError);
+ document.body.innerHTML='<div style="position:fixed;inset:0;display:grid;place-items:center;background:#18202a;color:#fff;padding:24px;font:16px/1.7 system-ui"><div style="max-width:720px;background:#302020;border:2px solid #ff8a70;border-radius:14px;padding:22px"><h2>3D画面を起動できません</h2><p>このブラウザーでWebGLを初期化できませんでした。</p><pre style="white-space:pre-wrap;overflow-wrap:anywhere">'+String(msg).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c]))+'</pre><p>Edgeの設定でハードウェアクセラレーションを有効にし、ブラウザーを再起動してください。</p></div></div>';
+ throw webglError;
+}
+renderer.setPixelRatio(Math.min(devicePixelRatio,1.25));
 renderer.shadowMap.enabled=false;
+canvas.addEventListener("webglcontextlost",event=>{
+ event.preventDefault();
+ showGameRuntimeError("WebGLコンテキスト", "3D描画の接続が失われました。ブラウザーのタブを再読み込みしてください。");
+});
+canvas.addEventListener("webglcontextrestored",()=>{
+ const el=document.getElementById("gameRuntimeError");
+ if(el){el.style.display="none";el.textContent="";}
+});
 const scene=new THREE.Scene();
-scene.background=new THREE.Color(0x14161c);
-scene.fog=new THREE.Fog(0x14161c,55,120);
-const camera=new THREE.PerspectiveCamera(78,1,0.1,200);
+scene.background=new THREE.Color(0x8da5b5);
+scene.fog=new THREE.Fog(0x8da5b5,85,180);
+const camera=new THREE.PerspectiveCamera(78,1,0.1,220);
 camera.rotation.order="YXZ";
 scene.add(camera);
 function resize(){const w=innerWidth,h=innerHeight;renderer.setSize(w,h,false);camera.aspect=w/h;camera.updateProjectionMatrix()}
 addEventListener("resize",resize);resize();
 
 /* 照明(軽量) */
-scene.add(new THREE.HemisphereLight(0xfff4e0,0x50565e,0.95));
-const sun=new THREE.DirectionalLight(0xfff0d8,0.7);sun.position.set(20,40,10);scene.add(sun);
+scene.add(new THREE.HemisphereLight(0xffffff,0x7b8795,1.35));
+scene.add(new THREE.AmbientLight(0xffffff,0.55));
+const sun=new THREE.DirectionalLight(0xffffff,0.9);sun.position.set(20,40,10);scene.add(sun);
+const tutorialLight=new THREE.PointLight(0xffffff,1.2,28);tutorialLight.position.set(-1,4,19);scene.add(tutorialLight);
 
 /* ---------- 店の寸法 ---------- */
 const W=100,D=60,WH=5.2; /* 長方形の大型店舗 */
@@ -504,7 +535,7 @@ const xpNeed=(l)=>Math.floor(50*Math.pow(l,1.6));
 /* ---------- プレイヤー ---------- */
 // チュートリアル商品は z=20 付近に配置されるため、開始時は店内(-Z方向)を向く。
 // 以前の yaw=Math.PI は入口(+Z方向)を向き、商品が背後になって暗い外側を見ていた。
-const player={x:-1,z:24.5,feet:0,vy:0,yaw:0,pitch:0};
+const player={x:-1,z:24.5,feet:0,vy:0,yaw:0,pitch:-0.22};
 const PR=0.35;
 const collide=(x,z)=>{
  if(x<ROOM.x0+0.6||x>ROOM.x1-0.6||z<ROOM.z0+0.6||z>ROOM.z1-0.6)return true;
@@ -959,43 +990,59 @@ const v3=new THREE.Vector3();
 let last=performance.now();
 function loop(){
  requestAnimationFrame(loop);
- const now=performance.now(),dt=Math.min(0.05,(now-last)/1000);last=now;S.time+=dt;
- /* 移動 */
- let mx=0,mz=0;
- if(keys.KeyW||keys.ArrowUp)mz-=1;if(keys.KeyS||keys.ArrowDown)mz+=1;
- if(keys.KeyA||keys.ArrowLeft)mx-=1;if(keys.KeyD||keys.ArrowRight)mx+=1;
- const l=Math.hypot(mx,mz);
- if(l>0){mx/=l;mz/=l}
- const dash=(keys.ShiftLeft||keys.ShiftRight)&&l>0;
- const sp=speed()*(dash?1.6:1);
- const cy=Math.cos(player.yaw),sy=Math.sin(player.yaw);
- const dx=(mx*cy+mz*sy)*sp*dt,dz=(-mx*sy+mz*cy)*sp*dt;
- if(!collide(player.x+dx,player.z))player.x+=dx;
- if(!collide(player.x,player.z+dz))player.z+=dz;
- player.x=clamp(player.x,ROOM.x0+0.6,ROOM.x1-0.6);player.z=clamp(player.z,ROOM.z0+0.6,ROOM.z1-0.6);
- camera.position.set(player.x,1.6,player.z);
- camera.rotation.set(player.pitch,player.yaw,0);
- hands.position.y=Math.sin(S.time*(l>0?9:2))*(l>0?0.02:0.005);
- /* 自動拾いスキル */
- if(skEffect("auto")>0&&rng2()<dt*0.2*skEffect("auto")){
-  const it=nearestItem(player.x,player.z,magnet()*0.6);
-  if(it&&carry.length<carryCap()){takeInstance(it.t,it.idx,1);carry.push({t:it.t});S.col++;syncHeld();saveDirty=true}
+ const now=performance.now(),dt=Math.min(0.05,(now-last)/1000);last=now;
+ try{
+  S.time+=dt;
+  /* 移動 */
+  let mx=0,mz=0;
+  if(keys.KeyW||keys.ArrowUp)mz-=1;if(keys.KeyS||keys.ArrowDown)mz+=1;
+  if(keys.KeyA||keys.ArrowLeft)mx-=1;if(keys.KeyD||keys.ArrowRight)mx+=1;
+  const l=Math.hypot(mx,mz);
+  if(l>0){mx/=l;mz/=l}
+  const dash=(keys.ShiftLeft||keys.ShiftRight)&&l>0;
+  const sp=speed()*(dash?1.6:1);
+  const cy=Math.cos(player.yaw),sy=Math.sin(player.yaw);
+  const dx=(mx*cy+mz*sy)*sp*dt,dz=(-mx*sy+mz*cy)*sp*dt;
+  if(!collide(player.x+dx,player.z))player.x+=dx;
+  if(!collide(player.x,player.z+dz))player.z+=dz;
+  player.x=clamp(player.x,ROOM.x0+0.6,ROOM.x1-0.6);
+  player.z=clamp(player.z,ROOM.z0+0.6,ROOM.z1-0.6);
+  hands.position.y=Math.sin(S.time*(l>0?9:2))*(l>0?0.02:0.005);
+  /* 自動拾いスキル */
+  if(skEffect("auto")>0&&rng2()<dt*0.2*skEffect("auto")){
+   const it=nearestItem(player.x,player.z,magnet()*0.6);
+   if(it&&carry.length<carryCap()){
+    takeInstance(it.t,it.idx,1);carry.push({t:it.t});S.col++;syncHeld();saveDirty=true;
+   }
+  }
+  updateMachines(dt);
+  updateTut();updateHUD();drawMinimap();
+  /* 照準プロンプト+レア */
+  const a=aimTarget();
+  let prompt="";
+  if(a&&a.kind==="item"){
+   let rr=null;
+   for(const r of rareMeshes)if(!r.taken&&Math.hypot(r.x-player.x,r.z-player.z)<magnet()){rr=r;break}
+   if(rr){
+    prompt="✨"+RARES[rr.ri].n+":"+RARES[rr.ri].d+"(E/クリックで獲得)";
+    if(keys.KeyE&&!keys.__rrl){takeRare(rr);keys.__rrl=true}else if(!keys.KeyE)keys.__rrl=false;
+   }else prompt="E/クリックで回収: "+PRODUCTS[a.it.t].n;
+  }else if(a&&a.kind==="shelf")prompt="E/クリックで収納: "+a.sh.name+"(収納"+a.sh.stored.length+"個)";
+  else if(a&&a.kind==="gacha")prompt="E/クリックでガチャ(券"+S.tickets+")";
+  else if(a&&a.kind==="drop")prompt="E/クリックで拾う: "+PRODUCTS[drops[a.di].t].n;
+  $("prompt").textContent=prompt;
+ }catch(updateError){
+  // 更新側に不具合があっても描画処理は止めない。
+  showGameRuntimeError("ゲーム更新",updateError);
  }
- updateMachines(dt);updateTut();updateHUD();drawMinimap();
- /* 照準プロンプト+レア */
- const a=aimTarget();
- let prompt="";
- if(a&&a.kind==="item"){
-  /* レア判定(距離が近いレア) */
-  let rr=null;for(const r of rareMeshes)if(!r.taken&&Math.hypot(r.x-player.x,r.z-player.z)<magnet()){rr=r;break}
-  if(rr){prompt="✨"+RARES[rr.ri].n+":"+RARES[rr.ri].d+"(E/クリックで獲得)";
-   if(keys.KeyE&&!keys.__rrl){takeRare(rr);keys.__rrl=true}else if(!keys.KeyE)keys.__rrl=false;
-  }else prompt="E/クリックで回収: "+PRODUCTS[a.it.t].n;
- }else if(a&&a.kind==="shelf")prompt="E/クリックで収納: "+a.sh.name+"(収納"+a.sh.stored.length+"個)";
- else if(a&&a.kind==="gacha")prompt="E/クリックでガチャ(券"+S.tickets+")";
- else if(a&&a.kind==="drop")prompt="E/クリックで拾う: "+PRODUCTS[drops[a.di].t].n;
- $("prompt").textContent=prompt;
- renderer.render(scene,camera);
+ /* カメラ更新と描画はゲーム更新とは分離して、毎フレーム必ず実行する。 */
+ try{
+  camera.position.set(player.x,1.6,player.z);
+  camera.rotation.set(player.pitch,player.yaw,0,"YXZ");
+  renderer.render(scene,camera);
+ }catch(renderError){
+  showGameRuntimeError("3D描画",renderError);
+ }
 }
 
 /* ---------- ログイン画面 ---------- */
@@ -1065,7 +1112,14 @@ function applySave(d){
 }
 /* 起動 */
 (async function boot(){
+ try{
  buildStore();placeAll();placeRares();placeInitStock();placeTutItems();buildMachines();
+ // ログイン画面を閉じる前にも一度描画し、黒いCanvasのまま待機しない。
+ try{
+  camera.position.set(player.x,1.6,player.z);
+  camera.rotation.set(player.pitch,player.yaw,0,"YXZ");
+  renderer.render(scene,camera);
+ }catch(initialRenderError){showGameRuntimeError("初期3D描画",initialRenderError)}
  let t="",u="";
  try{t=localStorage.getItem("cm3d_token")||"";u=localStorage.getItem("cm3d_user")||""}catch(e){}
  if(new URLSearchParams(location.search).get("guest")==="1"){
@@ -1093,6 +1147,16 @@ function applySave(d){
  }else{
   if(!t&&u)clearSavedLoginInfo();
   showLogin();
+ }
+ }catch(bootError){
+  showGameRuntimeError("起動",bootError);
+  // 店舗構築が途中で失敗しても、構築済みのシーンを描画して診断可能にする。
+  try{
+   camera.position.set(player.x,1.6,player.z);
+   camera.rotation.set(player.pitch,player.yaw,0,"YXZ");
+   renderer.render(scene,camera);
+  }catch(partialRenderError){showGameRuntimeError("起動時の描画",partialRenderError)}
+  showLogin("ゲームの初期化に失敗しました。画面下部のエラー内容を確認してください。\n"+(bootError&&bootError.message||bootError));
  }
 })();
 /* ミッションAPI連携(TERRA CARD用・URLパラメータ) */
