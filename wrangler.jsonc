@@ -1,0 +1,19 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "aa",
+  "main": "src/index.js",
+  "compatibility_date": "2026-11-27",
+  "workers_dev": true,
+  "assets": {
+    "directory": ".",
+    "binding": "ASSETS",
+    "run_worker_first": ["/api/*"]
+  },
+  "observability": {
+    "enabled": true
+  }
+  // IMPORTANT:
+  // Add the EXISTING KV namespace under "kv_namespaces" before the final deployment:
+  // "kv_namespaces": [{ "binding": "KV", "id": "YOUR_EXISTING_NAMESPACE_ID" }]
+  // Do not create a new namespace: the existing accounts and saves are stored in the old one.
+}
