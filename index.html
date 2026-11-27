@@ -970,7 +970,7 @@ async function getMusicCatalog(refresh=false){
    const res=await fetch(MUSIC_API,{headers:{Accept:"application/vnd.github+json"},cache:"no-store"});
    if(!res.ok)throw new Error("GitHubの曲一覧を取得できませんでした ("+res.status+")");
    const list=await res.json();
-   return list.filter(x=>x&&x.type==="file"&&/\\.(mp3|ogg|wav)$/i.test(x.name)&&x.download_url)
+   return list.filter(x=>x&&x.type==="file"&&/\.(mp3|ogg|wav)$/i.test(x.name)&&x.download_url)
     .map(x=>({name:x.name,url:x.download_url}))
     .sort((a,b)=>a.name.localeCompare(b.name,"ja"));
   }catch(error){
@@ -984,7 +984,7 @@ function playMusicTrack(track){
  if(!track||!track.url){toast("曲ファイルが見つかりません");return}
  currentTrackName=track.name;S.activeMusic=track.name;
  bgmAudio.src=track.url;bgmAudio.load();
- bgmAudio.play().then(()=>toast("♪ "+track.name.replace(/\\.[^.]+$/,"")+" を再生中"))
+ bgmAudio.play().then(()=>toast("♪ "+track.name.replace(/\.[^.]+$/,"")+" を再生中"))
   .catch(()=>toast("再生できません。もう一度「再生」を押してください"));
  saveDirty=true;
 }
@@ -1001,7 +1001,7 @@ function renderMusic(p,refresh=false){
   let html="<div style='display:grid;gap:8px'>";
   tracks.forEach(track=>{
    const owned=(S.ownedMusic||[]).includes(track.name)||track.name===MUSIC_FALLBACK.name;
-   const title=track.name.replace(/\\.(mp3|ogg|wav)$/i,"").replace(/[_-]+/g," ");
+   const title=track.name.replace(/\.(mp3|ogg|wav)$/i,"").replace(/[_-]+/g," ");
    const playing=currentTrackName===track.name&&!bgmAudio.paused;
    html+="<div style='display:flex;gap:10px;align-items:center;justify-content:space-between;padding:9px;border:1px solid #8a6a30;border-radius:9px;background:#191d25'>";
    html+="<div style='min-width:0'><b>"+escapeMusicText(title)+"</b><div style='font-size:11px;color:#c8b890'>"+(owned?"購入済み":"価格: "+MUSIC_PRICE+"コイン")+(playing?" ・再生中":"")+"</div></div>";
