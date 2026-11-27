@@ -74,6 +74,7 @@ html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#14161c;fon
  <button id="btnSkill" class="alt">スキル</button>
  <button id="btnShop" class="alt">ショップ</button>
  <button id="btnInfo" class="alt">情報</button>
+ <button id="btnMusic" class="alt">BGM</button>
  <button id="btnSettings" class="alt">設定</button>
 </div>
 <div id="panel"><button id="panelClose">✕ 閉じる</button><h3 id="panelTitle"></h3><div id="panelBody"></div></div>
@@ -226,7 +227,7 @@ function readOfflineSave(){
 }
 
 /* ---------- セーブ状態 ---------- */
-const fresh=()=>({v:3,money:0,xp:0,level:1,ap:0,skills:{},machines:{},gk:Array(15).fill(0),tickets:2,col:0,stored:0,found:[],titles:Array(6).fill(false),missions:{claimed:{}},rareFound:0,tutorialDone:false,prestige:0,time:0,drops:[],name:""});
+const fresh=()=>({v:3,money:0,xp:0,level:1,ap:0,skills:{},machines:{},gk:Array(15).fill(0),tickets:2,col:0,stored:0,found:[],titles:Array(6).fill(false),missions:{claimed:{}},rareFound:0,tutorialDone:false,prestige:0,time:0,drops:[],carry:[],ownedMusic:["shop_ambient.ogg"],activeMusic:"shop_ambient.ogg",name:""});
 let S=fresh();
 
 /* ---------- 商品定義(100種・実在風・10カテゴリ) ---------- */
@@ -247,6 +248,10 @@ const PRODUCTS=[
  /* 玩具 */ P("ぬいぐるみ",7,7,0xc08850),P("ブロックセット",7,1,0xe05048),P("カードパック",7,1,0x6858c8),P("ラジコン",7,1,0x3858c8),P("パズル1000ピース",7,1,0x6078a0),P("サッカーボール",7,4,0xf0f0f0),P("人形",7,7,0xe8a0b0),P("トランプ",7,1,0xc03848),P("プラモデル",7,1,0x4898d8),P("ヨーヨー",7,4,0xe8b028),
  /* 電気 */ P("充電ケーブル",7,7,0xf0f0f0),P("乾電池8本",7,1,0xe0a028),P("LED電球",7,4,0xe8e8d0),P("ワイヤレスイヤホン",7,1,0xf0f0f0),P("モバイルバッテリー",7,1,0x404858),P("電源タップ",7,1,0xe8e8e0),P("目覚まし時計",7,4,0x687080),P("扇風機(小型)",7,7,0x88a0b0),P("ドライヤー",7,7,0xc05848),P("携帯ゲーム機",7,1,0x8888a0),
  /* 衣料 */ P("Tシャツ",9,6,0xe8e8e8),P("靴下5足組",9,1,0xd8d8e0),P("フェイスタオル",9,1,0x88c8b8),P("キャップ",9,7,0x4858a0),P("マフラー",9,6,0xc06858),P("手袋",9,1,0x505868),P("下着パック",9,1,0xe8d8e0),P("パーカー",9,6,0x606878),P("サンダル",9,7,0x88a8e8),P("エプロン",9,6,0xd8a848)];
+/* 参考画像に合わせた形状割り当て:日用品・アイス・書籍 */
+[[0,0],[1,9],[2,10],[3,10],[4,10],[5,11],[6,12],[7,13],[8,0],[9,14]].forEach(([i,shape])=>PRODUCTS[i].s=shape);
+[[20,15],[21,15],[22,16],[23,1],[24,15],[25,17],[26,17],[27,1],[28,16],[29,4]].forEach(([i,shape])=>PRODUCTS[i].s=shape);
+for(let i=30;i<40;i++)PRODUCTS[i].s=(i===32?1:(i===33||i===36?0:8));
 /* レア(金色・見た目がそのものずばり) */
 const RARES=[
  {n:"金の会計レジ",d:"伝説の会計レジ。売上金が3倍になる",shape:"register"},
@@ -265,7 +270,7 @@ try{
  document.body.innerHTML='<div style="position:fixed;inset:0;display:grid;place-items:center;background:#18202a;color:#fff;padding:24px;font:16px/1.7 system-ui"><div style="max-width:720px;background:#302020;border:2px solid #ff8a70;border-radius:14px;padding:22px"><h2>3D画面を起動できません</h2><p>このブラウザーでWebGLを初期化できませんでした。</p><pre style="white-space:pre-wrap;overflow-wrap:anywhere">'+String(msg).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c]))+'</pre><p>Edgeの設定でハードウェアクセラレーションを有効にし、ブラウザーを再起動してください。</p></div></div>';
  throw webglError;
 }
-renderer.setPixelRatio(Math.min(devicePixelRatio,1.25));
+renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,1));
 renderer.shadowMap.enabled=false;
 canvas.addEventListener("webglcontextlost",event=>{
  event.preventDefault();
@@ -321,17 +326,62 @@ function boxGeo(w,h,d){const g=new THREE.BoxGeometry(w,h,d);return g}
 function cylGeo(r,h){const g=new THREE.CylinderGeometry(r,r,h,10);return g}
 function canGeo(r,h){const g=new THREE.CylinderGeometry(r,r,h,12);return g}
 const SHAPES=[
- boxGeo(0.36,0.30,0.24),      /* 0 本/箱横長 */
- boxGeo(0.34,0.34,0.30),      /* 1 箱 */
+ boxGeo(0.36,0.30,0.24),      /* 0 箱・ティッシュ */
+ boxGeo(0.34,0.34,0.30),      /* 1 商品箱 */
  cylGeo(0.11,0.34),           /* 2 ボトル */
  canGeo(0.10,0.24),           /* 3 缶 */
- cylGeo(0.14,0.16),           /* 4 カップ */
- boxGeo(0.10,0.34,0.05),      /* 5 細長菓子 */
+ cylGeo(0.14,0.16),           /* 4 アイスカップ */
+ boxGeo(0.10,0.34,0.05),      /* 5 細長パッケージ */
  boxGeo(0.30,0.36,0.16),      /* 6 袋 */
- boxGeo(0.22,0.22,0.22)];     /* 7 雑貨 */
-const HGT=[0.30,0.34,0.34,0.24,0.16,0.34,0.36,0.22];
-/* 商品用マテリアル(タイプごと・Lambert) */
-const prodMats=PRODUCTS.map(p=>new THREE.MeshLambertMaterial({color:p.col}));
+ boxGeo(0.22,0.22,0.22),      /* 7 雑貨 */
+ boxGeo(0.22,0.34,0.075),     /* 8 本・背表紙の厚み */
+ new THREE.CylinderGeometry(0.145,0.145,0.18,14), /* 9 トイレットペーパー */
+ new THREE.CylinderGeometry(0.105,0.145,0.34,12), /* 10 洗剤・シャンプーボトル */
+ boxGeo(0.25,0.12,0.17),      /* 11 石鹸 */
+ boxGeo(0.11,0.30,0.06),      /* 12 歯ブラシパック */
+ new THREE.CylinderGeometry(0.075,0.095,0.30,12), /* 13 スプレー缶 */
+ boxGeo(0.30,0.24,0.035),     /* 14 ハンガーを模した薄型パッケージ */
+ boxGeo(0.11,0.33,0.055),     /* 15 アイスバー */
+ new THREE.CylinderGeometry(0.14,0.12,0.19,14),   /* 16 アイスカップ */
+ (()=>{const g=new THREE.ConeGeometry(0.13,0.30,9);g.rotateZ(Math.PI);return g})() /* 17 コーン */
+];
+const HGT=[0.30,0.34,0.34,0.24,0.16,0.34,0.36,0.22,0.34,0.18,0.34,0.12,0.30,0.30,0.24,0.33,0.19,0.30];
+/* 商品名を印刷した軽量ラベルテクスチャ。画像素材を大量ロードせず、100種を識別可能にする。 */
+function makeProductTexture(p){
+ const cv=document.createElement("canvas");cv.width=128;cv.height=128;
+ const g=cv.getContext("2d");
+ const base="#"+p.col.toString(16).padStart(6,"0");
+ g.fillStyle=base;g.fillRect(0,0,128,128);
+ g.fillStyle="rgba(255,255,255,.88)";g.fillRect(6,22,116,94);
+ g.fillStyle="rgba(255,255,255,.24)";g.fillRect(0,0,128,16);
+ g.fillStyle="#203040";g.font="bold 10px sans-serif";g.textAlign="center";
+ g.fillText(CATS[p.c].n,64,12);
+ g.strokeStyle="rgba(30,45,55,.22)";g.lineWidth=2;g.strokeRect(7,23,114,92);
+ if(p.c===3){
+  g.fillStyle=base;g.fillRect(14,30,12,78);g.fillStyle="#26313a";g.fillRect(28,30,2,78);
+  g.fillStyle="#26313a";g.font="bold 13px sans-serif";g.textAlign="left";
+  g.fillText("BOOK",38,43);
+ }else if(p.c===2){
+  g.fillStyle="rgba(255,255,255,.92)";g.beginPath();g.arc(64,58,23,0,Math.PI*2);g.fill();
+  g.fillStyle=base;g.beginPath();g.arc(64,58,16,0,Math.PI*2);g.fill();
+ }else if(p.c===0){
+  g.fillStyle="rgba(255,255,255,.9)";g.fillRect(44,31,40,35);
+  g.fillStyle=base;g.fillRect(54,25,20,9);
+  g.fillStyle="rgba(255,255,255,.7)";g.fillRect(48,38,32,22);
+ }else{
+  g.fillStyle=base;g.beginPath();g.arc(64,58,20,0,Math.PI*2);g.fill();
+  g.fillStyle="rgba(255,255,255,.55)";g.beginPath();g.arc(57,51,8,0,Math.PI*2);g.fill();
+ }
+ g.fillStyle="#17212b";g.textAlign="center";
+ let size=15;g.font="bold "+size+"px sans-serif";
+ while(g.measureText(p.n).width>108&&size>9){size--;g.font="bold "+size+"px sans-serif"}
+ const words=p.n.length>8?[p.n.slice(0,Math.ceil(p.n.length/2)),p.n.slice(Math.ceil(p.n.length/2))]:[p.n];
+ g.fillText(words[0],64,91);
+ if(words[1])g.fillText(words[1],64,106);
+ const tex=new THREE.CanvasTexture(cv);tex.generateMipmaps=true;tex.minFilter=THREE.LinearMipmapLinearFilter;
+ return tex;
+}
+const prodMats=PRODUCTS.map(p=>new THREE.MeshLambertMaterial({color:0xffffff,map:makeProductTexture(p)}));
 const rareGeo={register:boxGeo(0.5,0.45,0.45),cart:boxGeo(0.5,0.42,0.6),sign:boxGeo(0.7,0.5,0.1),case:boxGeo(0.45,0.5,0.35)};
 
 /* ---------- 棚(ゴンドラ)定義 ---------- */
@@ -407,6 +457,7 @@ function buildStore(){
  const f2=new THREE.Mesh(boxGeo(0.1,0.5,TZ.z1-TZ.z0),fmat);f2.position.set(TZ.x1,0.25,(TZ.z0+TZ.z1)/2);g.add(f2);
  const f3=new THREE.Mesh(boxGeo(0.1,0.5,TZ.z1-TZ.z0),fmat);f3.position.set(TZ.x0,0.25,(TZ.z0+TZ.z1)/2);g.add(f3);
  scene.add(g);
+ window.__storeOccluderRoot=g;
 }
 /* ゴンドラ1台を構築(白枠+青トリム、天板サイン) */
 function buildShelf(sh,parent){
@@ -440,6 +491,7 @@ const state=new Uint8Array(TYPES*PER);         /* 0=床 1=回収済 2=自動回�
 const chunkMap=new Map();                       /* ck -> [{t,idx,x,z}] */
 const itemByIdx=new Array(TYPES*PER);           /* idx -> item(高速lookup) */
 const chunkMesh=new Map();                      /* ck_t -> InstancedMesh */
+const chunkRenderInfo=new Map();                /* chunk visibility / simple LOD */
 const typeCount=new Array(TYPES).fill(0);
 const shelfBBoxes=[];
 function inShelf(x,z){for(const b of shelfBBoxes)if(x>b.x0-0.2&&x<b.x1+0.2&&z>b.z0-0.2&&z<b.z1+0.2)return true;return false}
@@ -483,6 +535,9 @@ function placeAll(){
  window.__cellApi={cellGrid,ckOfCell};
  const m4=new THREE.Matrix4();
  for(const [ck,arr] of chunkMap){
+  const [cx,cz]=ck.split("_").map(Number);
+  const info={group:new THREE.Group(),meshes:[],x0:-50+cx*CKX,x1:-50+(cx+1)*CKX,z0:-30+cz*CKZ,z1:-30+(cz+1)*CKZ};
+  info.group.name="item-chunk-"+ck;scene.add(info.group);chunkRenderInfo.set(ck,info);
   for(let i=0;i<arr.length;i++){const it=arr[i];it.ck=ck;it.si=i;itemByIdx[it.idx]=it;const gk=ckOfCell(it.x,it.z);let ga=cellGrid.get(gk);if(!ga){ga=[];cellGrid.set(gk,ga)}ga.push(it)}
   const byType=new Map();
   for(const it of arr){let l=byType.get(it.t);if(!l){l=[];byType.set(it.t,l)}l.push(it)}
@@ -491,7 +546,25 @@ function placeAll(){
    for(let i=0;i<list.length;i++){const it=list[i];it.mi=i;it.im=im;m4.makeTranslation(pos[it.idx*3],pos[it.idx*3+1],pos[it.idx*3+2]);im.setMatrixAt(i,m4)}
    im.instanceMatrix.needsUpdate=true;
    im.frustumCulled=false;
-   scene.add(im);chunkMesh.set(ck+"_"+t,im);
+   im.userData.cmFullCount=list.length;
+   info.group.add(im);info.meshes.push(im);chunkMesh.set(ck+"_"+t,im);
+  }
+ }
+ updateChunkVisibility(true);
+}
+let lastChunkCullAt=0;
+function updateChunkVisibility(force=false){
+ const now=performance.now();
+ if(!force&&now-lastChunkCullAt<450)return;
+ lastChunkCullAt=now;
+ for(const info of chunkRenderInfo.values()){
+  const dx=Math.max(info.x0-player.x,0,player.x-info.x1),dz=Math.max(info.z0-player.z,0,player.z-info.z1);
+  const distance=Math.hypot(dx,dz);
+  const ratio=distance<20?1:(distance<38?0.38:0);
+  info.group.visible=ratio>0;
+  for(const mesh of info.meshes){
+   const count=ratio===1?mesh.userData.cmFullCount:(ratio>0?Math.max(1,Math.floor(mesh.userData.cmFullCount*ratio)):0);
+   if(mesh.count!==count)mesh.count=count;
   }
  }
 }
@@ -619,17 +692,36 @@ function pickRare(ri){
 
 /* ---------- インタラクト ---------- */
 let combo=0,comboT=0;
+const pickupRaycaster=new THREE.Raycaster();
+const pickupFrom=new THREE.Vector3(),pickupTo=new THREE.Vector3(),pickupDir=new THREE.Vector3();
+function pickupPathClear(x,y,z){
+ const root=window.__storeOccluderRoot;
+ if(!root)return true;
+ pickupFrom.set(player.x,1.35,player.z);
+ pickupTo.set(x,y,z);
+ pickupDir.subVectors(pickupTo,pickupFrom);
+ const distance=pickupDir.length();
+ if(distance<0.05)return true;
+ pickupDir.multiplyScalar(1/distance);
+ pickupRaycaster.set(pickupFrom,pickupDir);
+ pickupRaycaster.near=0.03;
+ pickupRaycaster.far=Math.max(0.01,distance-0.22);
+ return pickupRaycaster.intersectObjects(root.children,true).length===0;
+}
+function itemPathClear(it){
+ return pickupPathClear(it.x,Math.max(0.08,pos[it.idx*3+1]),it.z);
+}
 function aimTarget(){
- /* 視線方向の近い対象(グリッド直線サンプル) */
+ /* 視線上の候補を調べ、棚・壁・カウンターの裏なら拾えない */
  const dx=-Math.sin(player.yaw)*Math.cos(player.pitch),dz=-Math.cos(player.yaw)*Math.cos(player.pitch);
  const bd=magnet()+3;
  for(let s=0.5;s<bd;s+=0.5){
   const it=nearestItem(player.x+dx*s,player.z+dz*s,1.2);
-  if(it)return{kind:"item",it};
+  if(it&&itemPathClear(it))return{kind:"item",it};
  }
- /* 視線が少し外れていても、足元の近い商品は拾える */
+ /* 足元の商品も障害物がなければ拾える */
  const nearby=nearestItem(player.x,player.z,1.8);
- if(nearby)return{kind:"item",it:nearby};
+ if(nearby&&itemPathClear(nearby))return{kind:"item",it:nearby};
  /* 棚 */
  for(const sh of shelves){
   const b=sh.bbox;
@@ -637,7 +729,7 @@ function aimTarget(){
   if(Math.hypot(ddx,ddz)<1.6)return{kind:"shelf",sh};
  }
  for(let ci=0;ci<3;ci++){if(Math.hypot(player.x-(-12+ci*10),player.z-20)<3.4)return{kind:"gacha"}}
- for(const it of drops){const d=Math.hypot(it.x-player.x,it.z-player.z);if(d<2.5)return{kind:"drop",di:drops.indexOf(it)}}
+ for(const it of drops){const d=Math.hypot(it.x-player.x,it.z-player.z);if(d<2.5&&pickupPathClear(it.x,0.2,it.z))return{kind:"drop",di:drops.indexOf(it)}}
  return null;
 }
 function interact(){
@@ -855,14 +947,83 @@ function updateHUD(){
 /* ---------- パネル ---------- */
 let mode="";
 function closePanels(){mode="";$("panel").style.display="none"}
-function openPanel(m){mode=m;const T={skill:"SKILL TREE",shop:"SHOP",info:"INFO",settings:"設定"};$("panelTitle").textContent=T[m]||"";renderPanel();$("panel").style.display="block"}
+function openPanel(m){mode=m;const T={skill:"SKILL TREE",shop:"SHOP",info:"INFO",music:"BGM",settings:"設定"};$("panelTitle").textContent=T[m]||"";renderPanel();$("panel").style.display="block"}
 $("panelClose").addEventListener("click",closePanels);
 function renderPanel(){
  const p=$("panelBody");
  if(mode==="skill")renderSkill(p);
  else if(mode==="shop")renderShop(p);
  else if(mode==="info")renderInfo(p);
+ else if(mode==="music")renderMusic(p);
  else if(mode==="settings")renderSettings(p);
+}
+const MUSIC_PRICE=500;
+const MUSIC_API="https://api.github.com/repos/cosmosapr3-code/aa/contents/music?ref=main";
+const MUSIC_FALLBACK={name:"shop_ambient.ogg",download_url:"https://raw.githubusercontent.com/cosmosapr3-code/aa/main/music/shop_ambient.ogg"};
+let musicCatalogPromise=null,musicTracks=[],currentTrackName="";
+const bgmAudio=new Audio();bgmAudio.loop=true;bgmAudio.preload="none";bgmAudio.volume=0.32;
+function escapeMusicText(v){return String(v).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
+async function getMusicCatalog(refresh=false){
+ if(refresh)musicCatalogPromise=null;
+ if(!musicCatalogPromise)musicCatalogPromise=(async()=>{
+  try{
+   const res=await fetch(MUSIC_API,{headers:{Accept:"application/vnd.github+json"},cache:"no-store"});
+   if(!res.ok)throw new Error("GitHubの曲一覧を取得できませんでした ("+res.status+")");
+   const list=await res.json();
+   return list.filter(x=>x&&x.type==="file"&&/\\.(mp3|ogg|wav)$/i.test(x.name)&&x.download_url)
+    .map(x=>({name:x.name,url:x.download_url}))
+    .sort((a,b)=>a.name.localeCompare(b.name,"ja"));
+  }catch(error){
+   console.warn("[music catalogue]",error);
+   return [{name:MUSIC_FALLBACK.name,url:MUSIC_FALLBACK.download_url,offline:true}];
+  }
+ })();
+ return musicCatalogPromise;
+}
+function playMusicTrack(track){
+ if(!track||!track.url){toast("曲ファイルが見つかりません");return}
+ currentTrackName=track.name;S.activeMusic=track.name;
+ bgmAudio.src=track.url;bgmAudio.load();
+ bgmAudio.play().then(()=>toast("♪ "+track.name.replace(/\\.[^.]+$/,"")+" を再生中"))
+  .catch(()=>toast("再生できません。もう一度「再生」を押してください"));
+ saveDirty=true;
+}
+function renderMusic(p,refresh=false){
+ p.innerHTML="<div style='line-height:1.7'><b>店内BGM</b><p>最初の店内BGMは無料。追加した曲は1曲500コインで購入できます。</p><div id='musicStatus'>曲一覧を読み込み中...</div><p><label>音量 <input id='bgmVol' type='range' min='0' max='1' step='0.05' value='"+bgmAudio.volume+"'></label></p><button id='musicRefresh' style='padding:7px 12px;border-radius:8px'>曲一覧を更新</button><p style='font-size:12px;color:#c8b890'>GitHubの music/ フォルダに mp3 / ogg / wav を入れ、「曲一覧を更新」を押すと追加曲が表示されます。</p></div>";
+ const vol=$("bgmVol");vol.addEventListener("input",()=>{bgmAudio.volume=Number(vol.value)});
+ $("musicRefresh").addEventListener("click",()=>renderMusic(p,true));
+ getMusicCatalog(refresh).then(tracks=>{
+  if(mode!=="music")return;
+  musicTracks=tracks;
+  const status=$("musicStatus");
+  if(!status)return;
+  if(!tracks.length){status.textContent="music/ フォルダに曲がありません。";return}
+  let html="<div style='display:grid;gap:8px'>";
+  tracks.forEach(track=>{
+   const owned=(S.ownedMusic||[]).includes(track.name)||track.name===MUSIC_FALLBACK.name;
+   const title=track.name.replace(/\\.(mp3|ogg|wav)$/i,"").replace(/[_-]+/g," ");
+   const playing=currentTrackName===track.name&&!bgmAudio.paused;
+   html+="<div style='display:flex;gap:10px;align-items:center;justify-content:space-between;padding:9px;border:1px solid #8a6a30;border-radius:9px;background:#191d25'>";
+   html+="<div style='min-width:0'><b>"+escapeMusicText(title)+"</b><div style='font-size:11px;color:#c8b890'>"+(owned?"購入済み":"価格: "+MUSIC_PRICE+"コイン")+(playing?" ・再生中":"")+"</div></div>";
+   html+="<button type='button' data-track='"+encodeURIComponent(track.name)+"' style='flex-shrink:0;padding:7px 10px;border-radius:7px'>"+(playing?"停止":owned?"▶ 再生":"購入して再生")+"</button></div>";
+  });
+  html+="</div>";status.innerHTML=html;
+  status.querySelectorAll("button[data-track]").forEach(btn=>btn.addEventListener("click",()=>{
+   const name=decodeURIComponent(btn.dataset.track);
+   const track=musicTracks.find(x=>x.name===name);
+   if(!track)return;
+   const owned=(S.ownedMusic||[]).includes(name)||name===MUSIC_FALLBACK.name;
+   if(currentTrackName===name&&!bgmAudio.paused){bgmAudio.pause();toast("BGMを停止しました");renderMusic(p);return}
+   if(!owned){
+    if(S.money<MUSIC_PRICE){toast("コインが足りません。必要: "+MUSIC_PRICE+" / 所持: "+Math.floor(S.money));return}
+    S.money-=MUSIC_PRICE;S.ownedMusic=Array.isArray(S.ownedMusic)?S.ownedMusic:[];S.ownedMusic.push(name);
+    toast("「"+name+"」を購入しました");
+   }
+   S.activeMusic=name;saveDirty=true;playMusicTrack(track);renderMusic(p);
+  }));
+ }).catch(error=>{
+  const status=$("musicStatus");if(status)status.textContent="曲一覧の取得に失敗しました: "+error.message;
+ });
 }
 function renderSettings(p){
  p.innerHTML="<div style='line-height:1.8'>"+
@@ -993,6 +1154,7 @@ $("btnShop").addEventListener("click",()=>{
  if(S.level<10){toast("ショップはLv10で解放!");return}
  openPanel("shop")});
 $("btnInfo").addEventListener("click",()=>openPanel("info"));
+$("btnMusic").addEventListener("click",()=>openPanel("music"));
 $("btnSettings").addEventListener("click",()=>openPanel("settings"));
 
 /* ---------- チュートリアル ---------- */
@@ -1043,7 +1205,7 @@ function placeTutItems(){
 /* ---------- クラウドセーブ/ロード ---------- */
 let saveDirty=false,lastSave=0;
 function collectSave(){
- return {v:S.v,money:S.money,xp:S.xp,level:S.level,ap:S.ap,skills:S.skills,machines:S.machines,gk:S.gk,tickets:S.tickets,col:S.col,stored:S.stored,found:S.found,titles:S.titles,missions:S.missions,rareFound:S.rareFound,tutorialDone:S.tutorialDone,prestige:S.prestige,time:S.time,carry:carry.map(c=>({t:c.t})),drops:drops.map(d=>({t:d.t,x:d.x,z:d.z}))};
+ return {v:S.v,money:S.money,xp:S.xp,level:S.level,ap:S.ap,skills:S.skills,machines:S.machines,gk:S.gk,tickets:S.tickets,col:S.col,stored:S.stored,found:S.found,titles:S.titles,missions:S.missions,rareFound:S.rareFound,tutorialDone:S.tutorialDone,prestige:S.prestige,time:S.time,carry:carry.map(c=>({t:c.t})),ownedMusic:Array.isArray(S.ownedMusic)?S.ownedMusic:["shop_ambient.ogg"],activeMusic:S.activeMusic||"shop_ambient.ogg",drops:drops.map(d=>({t:d.t,x:d.x,z:d.z}))};
 }
 async function cloudSave(){
  try{
@@ -1067,7 +1229,7 @@ setInterval(()=>{if(saveDirty)cloudSave()},60000);
 
 /* ---------- メインループ ---------- */
 const v3=new THREE.Vector3();
-let last=performance.now();
+let last=performance.now(),lastRenderAt=0,lastUiAt=0;
 function loop(){
  requestAnimationFrame(loop);
  const now=performance.now(),dt=Math.min(0.05,(now-last)/1000);last=now;
@@ -1088,6 +1250,7 @@ function loop(){
   player.x=clamp(player.x,ROOM.x0+0.6,ROOM.x1-0.6);
   player.z=clamp(player.z,ROOM.z0+0.6,ROOM.z1-0.6);
   hands.position.y=Math.sin(S.time*(l>0?9:2))*(l>0?0.02:0.005);
+  updateChunkVisibility(false);
   /* 自動拾いスキル */
   if(skEffect("auto")>0&&rng2()<dt*0.2*skEffect("auto")){
    const it=nearestItem(player.x,player.z,magnet()*0.6);
@@ -1099,32 +1262,38 @@ function loop(){
   showGameRuntimeError("ゲーム更新/移動",updateError);
  }
  safeGameStep("設備",()=>updateMachines(dt));
- safeGameStep("チュートリアル",updateTut);
- safeGameStep("HUD",updateHUD);
- safeGameStep("ミニマップ",drawMinimap);
- safeGameStep("照準",()=>{
-  const a=aimTarget();
-  let prompt="";
-  if(a&&a.kind==="item"){
-   let rr=null;
-   for(const r of rareMeshes)if(!r.taken&&Math.hypot(r.x-player.x,r.z-player.z)<magnet()){rr=r;break}
-   if(rr){
-    prompt="✨"+RARES[rr.ri].n+":"+RARES[rr.ri].d+"(Eで獲得)";
-    if(keys.KeyE&&!keys.__rrl){takeRare(rr);keys.__rrl=true}else if(!keys.KeyE)keys.__rrl=false;
-   }else prompt="Eで回収: "+PRODUCTS[a.it.t].n;
-  }else if(a&&a.kind==="shelf")prompt="Eで収納: "+a.sh.name+"(収納"+a.sh.stored.length+"個)";
-  else if(a&&a.kind==="gacha")prompt="Eでガチャ(券"+S.tickets+")";
-  else if(a&&a.kind==="drop")prompt="Eで拾う: "+PRODUCTS[drops[a.di].t].n;
-  else if(document.pointerLockElement!==canvas)prompt="画面を一度クリックするとマウス視点操作（Escで解除）";
-  $("prompt").textContent=prompt;
- });
- /* カメラ更新と描画はゲーム更新とは分離して、毎フレーム必ず実行する。 */
- try{
-  camera.position.set(player.x,1.6,player.z);
-  camera.rotation.set(player.pitch,player.yaw,0,"YXZ");
-  renderer.render(scene,camera);
- }catch(renderError){
-  showGameRuntimeError("3D描画",renderError);
+ if(now-lastUiAt>120){
+  lastUiAt=now;
+  safeGameStep("チュートリアル",updateTut);
+  safeGameStep("HUD",updateHUD);
+  safeGameStep("ミニマップ",drawMinimap);
+  safeGameStep("照準",()=>{
+   const a=aimTarget();
+   let prompt="";
+   if(a&&a.kind==="item"){
+    let rr=null;
+    for(const r of rareMeshes)if(!r.taken&&Math.hypot(r.x-player.x,r.z-player.z)<magnet()&&pickupPathClear(r.x,0.3,r.z)){rr=r;break}
+    if(rr){
+     prompt="✨"+RARES[rr.ri].n+":"+RARES[rr.ri].d+"(Eで獲得)";
+     if(keys.KeyE&&!keys.__rrl){takeRare(rr);keys.__rrl=true}else if(!keys.KeyE)keys.__rrl=false;
+    }else prompt="Eで回収: "+PRODUCTS[a.it.t].n;
+   }else if(a&&a.kind==="shelf")prompt="Eで収納: "+a.sh.name+"(収納"+a.sh.stored.length+"個)";
+   else if(a&&a.kind==="gacha")prompt="Eでガチャ(券"+S.tickets+")";
+   else if(a&&a.kind==="drop")prompt="Eで拾う: "+PRODUCTS[drops[a.di].t].n;
+   else if(document.pointerLockElement!==canvas)prompt="画面を一度クリックするとマウス視点操作（Escで解除）";
+   $("prompt").textContent=prompt;
+  });
+ }
+ /* 描画は最大40fps。入力・移動・ゲーム処理はそのまま動かす。 */
+ if(now-lastRenderAt>=1000/40){
+  lastRenderAt=now;
+  try{
+   camera.position.set(player.x,1.6,player.z);
+   camera.rotation.set(player.pitch,player.yaw,0,"YXZ");
+   renderer.render(scene,camera);
+  }catch(renderError){
+   showGameRuntimeError("3D描画",renderError);
+  }
  }
 }
 
@@ -1196,6 +1365,8 @@ function applySave(d){
   gk:Array.isArray(data.gk)?data.gk:base.gk,
   titles:Array.isArray(data.titles)?data.titles:base.titles,
   drops:Array.isArray(data.drops)?data.drops:[],
+  ownedMusic:Array.isArray(data.ownedMusic)?data.ownedMusic:base.ownedMusic,
+  activeMusic:typeof data.activeMusic==="string"?data.activeMusic:base.activeMusic,
   missions:data.missions&&typeof data.missions==="object"?data.missions:base.missions
  };
  carry.length=0;
