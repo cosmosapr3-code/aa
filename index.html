@@ -959,64 +959,126 @@ function renderPanel(){
 }
 const MUSIC_PRICE=500;
 const MUSIC_API="https://api.github.com/repos/cosmosapr3-code/aa/contents/music?ref=main";
-const MUSIC_FALLBACK={name:"shop_ambient.ogg",download_url:"https://raw.githubusercontent.com/cosmosapr3-code/aa/main/music/shop_ambient.ogg"};
+/* 無料の店内環境音楽はWebAudioで合成。追加曲だけをmusic/から読み込む。 */
+const MUSIC_FALLBACK={name:"shop_ambient.ogg",builtin:true,free:true};
 let musicCatalogPromise=null,musicTracks=[],currentTrackName="";
 const bgmAudio=new Audio();bgmAudio.loop=true;bgmAudio.preload="none";bgmAudio.volume=0.32;
+let ambientContext=null,ambientMaster=null,ambientTimer=null,ambientActive=false;
 function escapeMusicText(v){return String(v).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
 async function getMusicCatalog(refresh=false){
  if(refresh)musicCatalogPromise=null;
  if(!musicCatalogPromise)musicCatalogPromise=(async()=>{
+  let files=[];
   try{
    const res=await fetch(MUSIC_API,{headers:{Accept:"application/vnd.github+json"},cache:"no-store"});
    if(!res.ok)throw new Error("GitHubの曲一覧を取得できませんでした ("+res.status+")");
    const list=await res.json();
-   return list.filter(x=>x&&x.type==="file"&&/\.(mp3|ogg|wav)$/i.test(x.name)&&x.download_url)
+   files=list.filter(x=>x&&x.type==="file"&&/\.(mp3|ogg|wav)$/i.test(x.name)&&x.download_url&&x.name!==MUSIC_FALLBACK.name)
     .map(x=>({name:x.name,url:x.download_url}))
     .sort((a,b)=>a.name.localeCompare(b.name,"ja"));
-  }catch(error){
-   console.warn("[music catalogue]",error);
-   return [{name:MUSIC_FALLBACK.name,url:MUSIC_FALLBACK.download_url,offline:true}];
-  }
+  }catch(error){console.warn("[music catalogue]",error)}
+  return [MUSIC_FALLBACK,...files];
  })();
  return musicCatalogPromise;
 }
+function stopAmbient(){
+ ambientActive=false;
+ if(ambientTimer){clearTimeout(ambientTimer);ambientTimer=null}
+ if(ambientMaster&&ambientContext){
+  try{ambientMaster.gain.cancelScheduledValues(ambientContext.currentTime);ambientMaster.gain.setTargetAtTime(0,ambientContext.currentTime,0.18)}catch(e){}
+  const old=ambientMaster;ambientMaster=null;
+  setTimeout(()=>{try{old.disconnect()}catch(e){}},900);
+ }
+}
+function stopMusicPlayback(){
+ bgmAudio.pause();
+ try{bgmAudio.removeAttribute("src");bgmAudio.load()}catch(e){}
+ stopAmbient();
+ currentTrackName="";
+}
+function ambientNote(freq,when,duration,volume,type="sine"){
+ const osc=ambientContext.createOscillator(),gain=ambientContext.createGain(),filter=ambientContext.createBiquadFilter();
+ osc.type=type;osc.frequency.setValueAtTime(freq,when);
+ filter.type="lowpass";filter.frequency.setValueAtTime(1100,when);
+ gain.gain.setValueAtTime(0.0001,when);
+ gain.gain.linearRampToValueAtTime(volume,when+0.75);
+ gain.gain.setValueAtTime(volume,when+Math.max(0.8,duration-0.9));
+ gain.gain.linearRampToValueAtTime(0.0001,when+duration);
+ osc.connect(filter);filter.connect(gain);gain.connect(ambientMaster);
+ osc.start(when);osc.stop(when+duration+0.05);
+}
+async function playBuiltInAmbient(){
+ stopMusicPlayback();
+ const AC=window.AudioContext||window.webkitAudioContext;
+ if(!AC){toast("このブラウザーはBGM再生に対応していません");return}
+ try{
+  ambientContext=ambientContext||new AC();
+  if(ambientContext.state==="suspended")await ambientContext.resume();
+  ambientMaster=ambientContext.createGain();
+  ambientMaster.gain.value=bgmAudio.volume*0.42;
+  ambientMaster.connect(ambientContext.destination);
+  ambientActive=true;currentTrackName=MUSIC_FALLBACK.name;S.activeMusic=MUSIC_FALLBACK.name;
+  const chords=[
+   [130.81,164.81,196.00,246.94],
+   [110.00,130.81,164.81,196.00],
+   [87.31,110.00,130.81,174.61],
+   [98.00,123.47,146.83,196.00]
+  ];
+  const melody=[392.00,440.00,523.25,440.00,392.00,329.63,349.23,392.00];
+  const schedule=()=>{
+   if(!ambientActive||!ambientContext||!ambientMaster)return;
+   const base=ambientContext.currentTime+0.12;
+   chords.forEach((chord,bar)=>chord.forEach((hz,index)=>ambientNote(hz,base+bar*4,4.35,0.0065,index===0?"sine":"triangle")));
+   melody.forEach((hz,index)=>ambientNote(hz,base+index*2,1.85,0.0024,"sine"));
+   ambientTimer=setTimeout(schedule,15800);
+  };
+  schedule();saveDirty=true;
+  toast("♪ おだやかな店内BGMを再生中");
+ }catch(error){stopAmbient();toast("BGMを開始できませんでした")}
+}
 function playMusicTrack(track){
- if(!track||!track.url){toast("曲ファイルが見つかりません");return}
+ if(!track){toast("曲ファイルが見つかりません");return}
+ if(track.builtin){playBuiltInAmbient();return}
+ if(!track.url){toast("曲ファイルが見つかりません");return}
+ stopMusicPlayback();
  currentTrackName=track.name;S.activeMusic=track.name;
  bgmAudio.src=track.url;bgmAudio.load();
  bgmAudio.play().then(()=>toast("♪ "+track.name.replace(/\.[^.]+$/,"")+" を再生中"))
   .catch(()=>toast("再生できません。もう一度「再生」を押してください"));
  saveDirty=true;
 }
+function musicIsPlaying(track){
+ return !!(currentTrackName===track.name&&(track.builtin?ambientActive:!bgmAudio.paused));
+}
 function renderMusic(p,refresh=false){
- p.innerHTML="<div style='line-height:1.7'><b>店内BGM</b><p>最初の店内BGMは無料。追加した曲は1曲500コインで購入できます。</p><div id='musicStatus'>曲一覧を読み込み中...</div><p><label>音量 <input id='bgmVol' type='range' min='0' max='1' step='0.05' value='"+bgmAudio.volume+"'></label></p><button id='musicRefresh' style='padding:7px 12px;border-radius:8px'>曲一覧を更新</button><p style='font-size:12px;color:#c8b890'>GitHubの music/ フォルダに mp3 / ogg / wav を入れ、「曲一覧を更新」を押すと追加曲が表示されます。</p></div>";
- const vol=$("bgmVol");vol.addEventListener("input",()=>{bgmAudio.volume=Number(vol.value)});
+ p.innerHTML="<div style='line-height:1.7'><b>店内BGM</b><p>穏やかな店内BGMは無料。music/ に追加した曲は1曲500コインで購入できます。</p><div id='musicStatus'>曲一覧を読み込み中...</div><p><label>音量 <input id='bgmVol' type='range' min='0' max='1' step='0.05' value='"+bgmAudio.volume+"'></label></p><button id='musicRefresh' style='padding:7px 12px;border-radius:8px'>曲一覧を更新</button><p style='font-size:12px;color:#c8b890'>GitHubの music/ フォルダに mp3 / ogg / wav を入れ、「曲一覧を更新」を押すと追加曲が表示されます。</p></div>";
+ const vol=$("bgmVol");vol.addEventListener("input",()=>{
+  bgmAudio.volume=Number(vol.value);
+  if(ambientMaster)ambientMaster.gain.setTargetAtTime(bgmAudio.volume*0.42,ambientContext.currentTime,0.08);
+ });
  $("musicRefresh").addEventListener("click",()=>renderMusic(p,true));
  getMusicCatalog(refresh).then(tracks=>{
   if(mode!=="music")return;
   musicTracks=tracks;
-  const status=$("musicStatus");
-  if(!status)return;
-  if(!tracks.length){status.textContent="music/ フォルダに曲がありません。";return}
+  const status=$("musicStatus");if(!status)return;
   let html="<div style='display:grid;gap:8px'>";
   tracks.forEach(track=>{
-   const owned=(S.ownedMusic||[]).includes(track.name)||track.name===MUSIC_FALLBACK.name;
+   const owned=track.free||(S.ownedMusic||[]).includes(track.name);
    const title=track.name.replace(/\.(mp3|ogg|wav)$/i,"").replace(/[_-]+/g," ");
-   const playing=currentTrackName===track.name&&!bgmAudio.paused;
+   const playing=musicIsPlaying(track);
    html+="<div style='display:flex;gap:10px;align-items:center;justify-content:space-between;padding:9px;border:1px solid #8a6a30;border-radius:9px;background:#191d25'>";
-   html+="<div style='min-width:0'><b>"+escapeMusicText(title)+"</b><div style='font-size:11px;color:#c8b890'>"+(owned?"購入済み":"価格: "+MUSIC_PRICE+"コイン")+(playing?" ・再生中":"")+"</div></div>";
+   html+="<div style='min-width:0'><b>"+escapeMusicText(title)+"</b><div style='font-size:11px;color:#c8b890'>"+(track.free?"無料":owned?"購入済み":"価格: "+MUSIC_PRICE+"コイン")+(playing?" ・再生中":"")+"</div></div>";
    html+="<button type='button' data-track='"+encodeURIComponent(track.name)+"' style='flex-shrink:0;padding:7px 10px;border-radius:7px'>"+(playing?"停止":owned?"▶ 再生":"購入して再生")+"</button></div>";
   });
   html+="</div>";status.innerHTML=html;
   status.querySelectorAll("button[data-track]").forEach(btn=>btn.addEventListener("click",()=>{
-   const name=decodeURIComponent(btn.dataset.track);
-   const track=musicTracks.find(x=>x.name===name);
+   const name=decodeURIComponent(btn.dataset.track),track=musicTracks.find(x=>x.name===name);
    if(!track)return;
-   const owned=(S.ownedMusic||[]).includes(name)||name===MUSIC_FALLBACK.name;
-   if(currentTrackName===name&&!bgmAudio.paused){bgmAudio.pause();toast("BGMを停止しました");renderMusic(p);return}
+   if(musicIsPlaying(track)){stopMusicPlayback();toast("BGMを停止しました");renderMusic(p);return}
+   const owned=track.free||(S.ownedMusic||[]).includes(name);
    if(!owned){
     if(S.money<MUSIC_PRICE){toast("コインが足りません。必要: "+MUSIC_PRICE+" / 所持: "+Math.floor(S.money));return}
-    S.money-=MUSIC_PRICE;S.ownedMusic=Array.isArray(S.ownedMusic)?S.ownedMusic:[];S.ownedMusic.push(name);
+    S.money-=MUSIC_PRICE;S.ownedMusic=Array.isArray(S.ownedMusic)?S.ownedMusic:[MUSIC_FALLBACK.name];S.ownedMusic.push(name);
     toast("「"+name+"」を購入しました");
    }
    S.activeMusic=name;saveDirty=true;playMusicTrack(track);renderMusic(p);
