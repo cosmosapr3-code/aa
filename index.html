@@ -719,8 +719,8 @@ function itemsInRadius(x,z,r,maxN){
 
 const rng2=mulberry32(20261127);
 /* ---------- 状態計算(設備+スキル) ---------- */
-const mc=(k)=>S.machines[k]||0;
-const sk=(k)=>S.skills[k]||0;
+const mc=(k)=>Math.max(0,Number(S.machines[k])||0);
+const sk=(k)=>Math.max(0,Math.floor(Number(S.skills[k])||0));
 const hq=()=>mc("hq");
 const L=(k)=>Math.round((mc(k))*(1+0.1*hq())); /* 店舗管理AI/HQで性能強化 */
 const carryCap=()=>3+L("cart")*2+L("fork")*5+sk("multi")*1+L("ware")*2;
@@ -755,11 +755,50 @@ function movePlayer(dx,dz){
  }
 }
 const keys={};
-addEventListener("keydown",e=>{keys[e.code]=true;
- if(e.code==="KeyE")interact();
- if(e.code==="KeyG")dropTop();
- if(e.code==="KeyT")gateTeleport();
- if(e.code==="Escape")closePanels();
+const DEFAULT_KEY_BINDS={forward:"KeyW",backward:"KeyS",left:"KeyA",right:"KeyD",interact:"KeyE",drop:"KeyG",teleport:"KeyT",jump:"Space",dash:"ShiftLeft",skill:"Digit1",shop:"Digit2",info:"Digit3",music:"Digit4",settings:"Digit5",close:"Escape"};
+const KEY_BIND_LABELS={forward:"前へ移動",backward:"後ろへ移動",left:"左へ移動",right:"右へ移動",interact:"拾う・収納・決定",drop:"持ち物を置く",teleport:"ゲート移動",jump:"ジャンプ",dash:"ダッシュ",skill:"スキル画面",shop:"ショップ画面",info:"情報画面",music:"BGM画面",settings:"設定画面",close:"パネルを閉じる"};
+function loadKeyBinds(){
+ let saved={};try{saved=JSON.parse(localStorage.getItem("cm3d_keybinds")||"{}")||{}}catch(e){}
+ const result={...DEFAULT_KEY_BINDS},used=new Set();
+ for(const id of Object.keys(DEFAULT_KEY_BINDS)){
+  const code=typeof saved[id]==="string"?saved[id]:result[id];
+  if(code&&!used.has(code)){result[id]=code;used.add(code)}
+  else if(!used.has(result[id]))used.add(result[id]);
+ }
+ return result;
+}
+let keyBinds=loadKeyBinds(),remappingAction=null,jumpRequested=false;
+function keyLabel(code){
+ const names={Space:"Space",Escape:"Esc",ShiftLeft:"左Shift",ShiftRight:"右Shift",ControlLeft:"左Ctrl",ControlRight:"右Ctrl",AltLeft:"左Alt",AltRight:"右Alt",ArrowUp:"↑",ArrowDown:"↓",ArrowLeft:"←",ArrowRight:"→",Enter:"Enter",Tab:"Tab",Backspace:"Backspace"};
+ if(names[code])return names[code];
+ if(/^Key[A-Z]$/.test(code))return code.slice(3);
+ if(/^Digit[0-9]$/.test(code))return code.slice(5);
+ if(/^Numpad[0-9]$/.test(code))return "Num"+code.slice(6);
+ return code||"未設定";
+}
+function actionDown(id){return !!keys[keyBinds[id]]}
+function saveKeyBinds(){try{localStorage.setItem("cm3d_keybinds",JSON.stringify(keyBinds))}catch(e){toast("キー設定を保存できませんでした")}}
+addEventListener("keydown",e=>{
+ if(remappingAction){
+  if(e.code==="Escape"){remappingAction=null;if(mode==="settings")renderSettings($("panelBody"));toast("キー変更をキャンセルしました");e.preventDefault();return}
+  const used=Object.entries(keyBinds).find(([id,code])=>id!==remappingAction&&code===e.code);
+  if(used){toast("そのキーは「"+KEY_BIND_LABELS[used[0]]+"」に使用中です");e.preventDefault();return}
+  keyBinds[remappingAction]=e.code;const label=KEY_BIND_LABELS[remappingAction];remappingAction=null;saveKeyBinds();
+  if(mode==="settings")renderSettings($("panelBody"));toast(label+" を "+keyLabel(e.code)+" に変更しました");e.preventDefault();return;
+ }
+ keys[e.code]=true;
+ if(e.repeat)return;
+ if(e.code==="Space"||Object.values(keyBinds).includes(e.code))e.preventDefault();
+ if(e.code===keyBinds.interact)interact();
+ if(e.code===keyBinds.drop)dropTop();
+ if(e.code===keyBinds.teleport)gateTeleport();
+ if(e.code===keyBinds.jump)jumpRequested=true;
+ if(e.code===keyBinds.skill)openPanel("skill");
+ if(e.code===keyBinds.shop){if(S.level<10)toast("ショップはLv10で解放!");else openPanel("shop")}
+ if(e.code===keyBinds.info)openPanel("info");
+ if(e.code===keyBinds.music)openPanel("music");
+ if(e.code===keyBinds.settings)openPanel("settings");
+ if(e.code===keyBinds.close)closePanels();
 });
 addEventListener("keyup",e=>{keys[e.code]=false});
 let mouseSensitivity=0.0025;
@@ -1101,9 +1140,15 @@ function updateHUD(){
  if(inv){inv.style.display="block";inv.innerHTML="<b>🛒 持ち物 "+carry.length+"/"+carryCap()+"</b><div class='inv-items'>"+(carry.length?carry.map(c=>"<span class='inv-item'>"+PRODUCTS[c.t].n+"</span>").join(""):"<span class='inv-empty'>なし — 商品に近づいて E で拾う</span>")+"</div>"}
 }
 /* ---------- パネル ---------- */
-let mode="";
-function closePanels(){mode="";$("panel").style.display="none"}
-function openPanel(m){mode=m;const T={skill:"SKILL TREE",shop:"SHOP",info:"INFO",music:"BGM",settings:"設定"};$("panelTitle").textContent=T[m]||"";renderPanel();$("panel").style.display="block"}
+let mode="",panelReturnToPointerLock=false;
+function closePanels(){
+ mode="";$("panel").style.display="none";
+ if(panelReturnToPointerLock){panelReturnToPointerLock=false;try{const request=canvas.requestPointerLock();if(request&&typeof request.catch==="function")request.catch(()=>{})}catch(e){}}
+}
+function openPanel(m){
+ if(document.pointerLockElement===canvas){panelReturnToPointerLock=true;try{document.exitPointerLock()}catch(e){}}
+ mode=m;const T={skill:"SKILL TREE",shop:"SHOP",info:"INFO",music:"BGM",settings:"設定"};$("panelTitle").textContent=T[m]||"";renderPanel();$("panel").style.display="block"
+}
 $("panelClose").addEventListener("click",closePanels);
 function renderPanel(){
  const p=$("panelBody");
@@ -1466,18 +1511,22 @@ function loop(){
   S.time+=dt;
   /* 移動 */
   let mx=0,mz=0;
-  if(keys.KeyW||keys.ArrowUp)mz-=1;if(keys.KeyS||keys.ArrowDown)mz+=1;
-  if(keys.KeyA||keys.ArrowLeft)mx-=1;if(keys.KeyD||keys.ArrowRight)mx+=1;
+  if(actionDown("forward"))mz-=1;if(actionDown("backward"))mz+=1;
+  if(actionDown("left"))mx-=1;if(actionDown("right"))mx+=1;
   const l=Math.hypot(mx,mz);
   if(l>0){mx/=l;mz/=l}
-  const dash=(keys.ShiftLeft||keys.ShiftRight)&&l>0;
+  const dash=actionDown("dash")&&l>0;
   const sp=speed()*(dash?1.6:1);
   const cy=Math.cos(player.yaw),sy=Math.sin(player.yaw);
   const dx=(mx*cy+mz*sy)*sp*dt,dz=(-mx*sy+mz*cy)*sp*dt;
   movePlayer(dx,dz);
   player.x=clamp(player.x,ROOM.x0+0.6,ROOM.x1-0.6);
   player.z=clamp(player.z,ROOM.z0+0.6,ROOM.z1-0.6);
-  hands.position.y=Math.sin(S.time*(l>0?9:2))*(l>0?0.02:0.005);
+  if(jumpRequested&&player.feet<=0.001)player.vy=5.4;
+  jumpRequested=false;
+  player.vy-=15*dt;player.feet+=player.vy*dt;
+  if(player.feet<0){player.feet=0;player.vy=0}
+  hands.position.y=player.feet+Math.sin(S.time*(l>0?9:2))*(l>0?0.02:0.005);
   updateChunkVisibility(false);
   refreshNearbyDetails(false);
   /* 自動拾いスキル */
@@ -1504,7 +1553,7 @@ function loop(){
     for(const r of rareMeshes)if(!r.taken&&Math.hypot(r.x-player.x,r.z-player.z)<magnet()&&pickupPathClear(r.x,0.3,r.z)){rr=r;break}
     if(rr){
      prompt="✨"+RARES[rr.ri].n+":"+RARES[rr.ri].d+"(Eで獲得)";
-     if(keys.KeyE&&!keys.__rrl){takeRare(rr);keys.__rrl=true}else if(!keys.KeyE)keys.__rrl=false;
+     if(actionDown("interact")&&!keys.__rrl){takeRare(rr);keys.__rrl=true}else if(!actionDown("interact"))keys.__rrl=false;
     }else prompt="Eで回収: "+PRODUCTS[a.it.t].n;
    }else if(a&&a.kind==="shelf")prompt="Eで収納: "+a.sh.name+"(収納"+a.sh.stored.length+"個)";
    else if(a&&a.kind==="gacha")prompt="Eでガチャ(券"+S.tickets+")";
@@ -1517,7 +1566,7 @@ function loop(){
  if(now-lastRenderAt>=1000/30){
   lastRenderAt=now;
   try{
-   camera.position.set(player.x,1.6,player.z);
+   camera.position.set(player.x,1.6+player.feet,player.z);
    camera.rotation.set(player.pitch,player.yaw,0,"YXZ");
    renderer.render(scene,camera);
   }catch(renderError){
@@ -1618,7 +1667,7 @@ function applySave(d){
  buildStore();placeAll();placeRares();placeInitStock();placeTutItems();buildMachines();
  // ログイン画面を閉じる前にも一度描画し、黒いCanvasのまま待機しない。
  try{
-  camera.position.set(player.x,1.6,player.z);
+  camera.position.set(player.x,1.6+player.feet,player.z);
   camera.rotation.set(player.pitch,player.yaw,0,"YXZ");
   renderer.render(scene,camera);
  }catch(initialRenderError){showGameRuntimeError("初期3D描画",initialRenderError)}
@@ -1632,7 +1681,7 @@ function applySave(d){
   showGameRuntimeError("起動",bootError);
   // 店舗構築が途中で失敗しても、構築済みのシーンを描画して診断可能にする。
   try{
-   camera.position.set(player.x,1.6,player.z);
+   camera.position.set(player.x,1.6+player.feet,player.z);
    camera.rotation.set(player.pitch,player.yaw,0,"YXZ");
    renderer.render(scene,camera);
   }catch(partialRenderError){showGameRuntimeError("起動時の描画",partialRenderError)}
