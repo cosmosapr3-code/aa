@@ -354,7 +354,7 @@ const prodMats=CATS.map(c=>new THREE.MeshLambertMaterial({color:c.col}));
 /* 実画像アトラス。12種類の透明背景アイコンを必要な時だけテクスチャ化する。 */
 let productRenderDistance=8.5;
 try{const savedRange=Number(localStorage.getItem("cm3d_product_render_distance"));if(Number.isFinite(savedRange))productRenderDistance=Math.max(4,Math.min(24,savedRange))}catch(e){}
-const PRODUCT_ATLAS_URL="./assets/product-photo-atlas.webp?v=20261127-photos-1";
+const PRODUCT_ATLAS_URL="./assets/product-photo-atlas.svg?v=20261127-photos-1";
 const productAtlasImage=new Image();
 let productAtlasReady=false;
 const detailProductMaterials=new Map();
