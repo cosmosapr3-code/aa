@@ -1,0 +1,143 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
+<defs>
+ <linearGradient id="white" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#fffef7"/><stop offset=".48" stop-color="#e5e1d8"/><stop offset="1" stop-color="#b9b4ac"/></linearGradient>
+ <linearGradient id="blue" x1="0" y1="0" x2=".9" y2="1"><stop stop-color="#b9efff"/><stop offset=".38" stop-color="#2989c1"/><stop offset="1" stop-color="#145076"/></linearGradient>
+ <linearGradient id="pink" x1="0" y1="0" x2=".85" y2="1"><stop stop-color="#ffd7df"/><stop offset=".4" stop-color="#e86c94"/><stop offset="1" stop-color="#963b60"/></linearGradient>
+ <linearGradient id="green" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#d7f19b"/><stop offset=".45" stop-color="#6aa94c"/><stop offset="1" stop-color="#315b35"/></linearGradient>
+ <linearGradient id="yellow" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#fff4b3"/><stop offset=".5" stop-color="#e9b94e"/><stop offset="1" stop-color="#a96c26"/></linearGradient>
+ <linearGradient id="purple" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#e7d8ff"/><stop offset=".5" stop-color="#9474c7"/><stop offset="1" stop-color="#4d3d78"/></linearGradient>
+ <linearGradient id="red" x1="0" y1="0" x2=".8" y2="1"><stop stop-color="#ffb39b"/><stop offset=".45" stop-color="#e45a43"/><stop offset="1" stop-color="#8d2d35"/></linearGradient>
+ <linearGradient id="metal" x1="0" y1="0" x2="1" y2="0"><stop stop-color="#8e9ba2"/><stop offset=".25" stop-color="#f9ffff"/><stop offset=".55" stop-color="#aebbc0"/><stop offset=".82" stop-color="#f8ffff"/><stop offset="1" stop-color="#66757c"/></linearGradient>
+ <linearGradient id="ice" x1="0" y1="0" x2=".8" y2="1"><stop stop-color="#fff9e9"/><stop offset=".5" stop-color="#f5b3bf"/><stop offset="1" stop-color="#c65e87"/></linearGradient>
+ <filter id="shadow" x="-40%" y="-40%" width="180%" height="180%"><feGaussianBlur in="SourceAlpha" stdDeviation="4"/><feOffset dx="2" dy="5" result="off"/><feComponentTransfer><feFuncA type="linear" slope=".35"/></feComponentTransfer><feMerge><feMergeNode/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+ <filter id="soft" x="-30%" y="-30%" width="160%" height="160%"><feGaussianBlur stdDeviation="1.2"/></filter>
+</defs>
+<!-- 0 tissues: box fallen onto one side -->
+<g transform="translate(0 0)"><g transform="rotate(-17 64 64)" filter="url(#shadow)">
+ <path d="M18 43 Q21 32 34 29 L98 35 Q108 39 108 51 L101 94 Q98 103 86 102 L22 94 Q14 89 16 78Z" fill="url(#purple)" stroke="#675087" stroke-width="2"/>
+ <path d="M27 42 L94 48 L89 91 L23 83Z" fill="#f5f1ed" opacity=".92"/>
+ <path d="M42 35 Q52 12 67 29 Q81 12 86 42 Q78 55 64 49 Q51 58 42 35Z" fill="url(#white)" stroke="#d9d3d0"/>
+ <path d="M45 36 Q53 21 63 34 Q73 20 81 37" fill="none" stroke="#fff" stroke-width="3"/>
+ <path d="M29 45 L88 51" stroke="#b4a7c7" stroke-width="2" opacity=".6"/>
+ </g></g>
+<!-- 1 toilet roll -->
+<g transform="translate(128 0)"><g transform="rotate(22 64 64)" filter="url(#shadow)">
+ <path d="M22 37 Q29 26 88 30 Q107 34 108 47 L104 84 Q100 101 43 97 Q21 95 19 82Z" fill="url(#white)" stroke="#aaa49e" stroke-width="2"/>
+ <ellipse cx="25" cy="61" rx="14" ry="27" fill="#f8f7f4" stroke="#bcb8b2" stroke-width="2"/>
+ <ellipse cx="25" cy="61" rx="6" ry="13" fill="#9b978f"/>
+ <path d="M24 35 Q37 31 86 35 Q99 37 99 47 L96 81" fill="none" stroke="#fff" stroke-width="5" opacity=".8"/>
+ <path d="M28 43 Q43 48 68 45" stroke="#ddd8d0" fill="none" stroke-width="2"/>
+ </g></g>
+<!-- 2 detergent bottle -->
+<g transform="translate(256 0)"><g transform="rotate(-27 64 64)" filter="url(#shadow)">
+ <path d="M43 24 L74 20 L78 32 L89 39 L91 91 Q89 105 72 105 L32 97 Q24 94 28 80 L39 41Z" fill="url(#blue)" stroke="#155b81" stroke-width="2"/>
+ <path d="M46 18 L70 15 L72 26 L45 29Z" fill="#e7f7fb" stroke="#43829b" stroke-width="2"/>
+ <path d="M50 29 L70 28 L74 40 L43 42Z" fill="#e7f7fc" stroke="#a4d4e3"/>
+ <path d="M35 55 Q55 46 84 55 L82 82 Q59 91 31 80Z" fill="#eaf7f1" opacity=".9"/>
+ <path d="M40 60 L76 60 L72 72 L36 72Z" fill="#2a88ad" opacity=".8"/>
+ <path d="M39 46 Q46 44 48 54 L40 85" fill="none" stroke="#d4f5ff" stroke-width="4" opacity=".7"/>
+ </g></g>
+<!-- 3 shampoo bottle -->
+<g transform="translate(384 0)"><g transform="rotate(18 64 64)" filter="url(#shadow)">
+ <path d="M48 20 L73 20 L74 32 Q87 36 90 49 L91 90 Q90 101 77 103 L34 98 Q25 95 28 82 L32 50 Q34 38 46 33Z" fill="url(#pink)" stroke="#9a3d61" stroke-width="2"/>
+ <path d="M48 15 L74 15 L75 24 L48 25Z" fill="#fff0f1" stroke="#bd728e"/>
+ <path d="M37 52 Q59 43 83 54 L82 78 Q59 87 35 75Z" fill="#fff6f5" opacity=".9"/>
+ <path d="M42 57 Q60 52 77 57" stroke="#ec9bb6" stroke-width="3" fill="none"/>
+ <path d="M40 39 Q45 34 48 42 L42 88" stroke="#ffe6ed" stroke-width="4" fill="none" opacity=".65"/>
+ </g></g>
+<!-- 4 toothbrush blister pack -->
+<g transform="translate(0 128)"><g transform="rotate(-20 64 64)" filter="url(#shadow)">
+ <rect x="20" y="25" width="87" height="76" rx="9" fill="#e9f6f5" stroke="#96b9c2" stroke-width="2"/>
+ <rect x="27" y="32" width="73" height="62" rx="6" fill="#fff" opacity=".55"/>
+ <path d="M37 76 L82 40" stroke="#e65f54" stroke-width="9" stroke-linecap="round"/>
+ <path d="M34 81 L78 47" stroke="#f6a45a" stroke-width="6" stroke-linecap="round"/>
+ <path d="M79 39 L89 30 M82 43 L94 35 M85 47 L98 41" stroke="#f4f4f4" stroke-width="3" stroke-linecap="round"/>
+ <path d="M29 38 L45 34 L41 90 L28 88Z" fill="#fff" opacity=".25"/>
+ </g></g>
+<!-- 5 sponge -->
+<g transform="translate(128 128)"><g transform="rotate(13 64 64)" filter="url(#shadow)">
+ <path d="M17 43 Q20 32 34 33 L102 43 L99 89 Q97 100 84 99 L22 90Z" fill="url(#yellow)" stroke="#aa823f" stroke-width="2"/>
+ <path d="M21 41 Q23 31 35 32 L99 40 L95 57 L18 52Z" fill="#e5cf69"/>
+ <path d="M24 57 L95 62 L91 89 Q86 95 78 92 L22 85Z" fill="url(#green)"/>
+ <g fill="#e3f2bd" opacity=".7"><circle cx="39" cy="71" r="2"/><circle cx="57" cy="81" r="2"/><circle cx="80" cy="69" r="2"/><circle cx="64" cy="62" r="1.5"/></g>
+ </g></g>
+<!-- 6 ice pop -->
+<g transform="translate(256 128)"><g transform="rotate(-28 64 64)" filter="url(#shadow)">
+ <path d="M55 79 L72 80 L72 106 L61 115 Q53 108 55 98Z" fill="#d7ab72" stroke="#9b7048"/>
+ <path d="M42 20 Q64 11 84 28 L92 46 L84 83 Q66 96 39 83 L30 57 Q29 34 42 20Z" fill="url(#ice)" stroke="#be768e" stroke-width="2"/>
+ <path d="M40 27 Q52 19 64 25 Q77 25 84 38" stroke="#fff" stroke-width="5" fill="none" opacity=".8"/>
+ <path d="M38 49 Q62 61 87 48" stroke="#fff6f4" stroke-width="3" fill="none" opacity=".45"/>
+ </g></g>
+<!-- 7 ice cream cup -->
+<g transform="translate(384 128)"><g transform="rotate(21 64 64)" filter="url(#shadow)">
+ <path d="M31 52 L96 50 L86 100 Q63 112 42 98Z" fill="url(#pink)" stroke="#9d4d66" stroke-width="2"/>
+ <ellipse cx="64" cy="52" rx="33" ry="14" fill="#e9e4de" stroke="#b8b0a8" stroke-width="2"/>
+ <path d="M35 49 Q38 26 53 30 Q61 15 74 31 Q91 25 94 48 Q81 63 64 55 Q45 65 35 49Z" fill="url(#white)" stroke="#e0d8cd"/>
+ <path d="M43 42 Q52 24 64 35 Q76 21 86 42" stroke="#fff" stroke-width="3" fill="none"/>
+ </g></g>
+<!-- 8 cone -->
+<g transform="translate(0 256)"><g transform="rotate(38 64 64)" filter="url(#shadow)">
+ <path d="M44 59 L87 62 L66 112 Q61 117 58 108Z" fill="url(#yellow)" stroke="#ad7b3e" stroke-width="2"/>
+ <path d="M40 55 L91 58" stroke="#c48e4d" stroke-width="4"/>
+ <path d="M42 52 Q34 36 48 26 Q56 12 70 21 Q85 14 91 33 Q104 43 91 57 Q68 68 42 52Z" fill="url(#ice)" stroke="#bd7988" stroke-width="2"/>
+ <path d="M51 34 Q60 17 74 31 Q84 20 87 39" stroke="#fff6ee" stroke-width="4" fill="none"/>
+ <path d="M48 71 L76 94 M56 63 L82 81 M64 61 L73 74" stroke="#d39950" stroke-width="2" opacity=".8"/>
+ </g></g>
+<!-- 9 mochi box -->
+<g transform="translate(128 256)"><g transform="rotate(-13 64 64)" filter="url(#shadow)">
+ <path d="M19 45 L102 37 L108 91 L25 101Z" fill="#f4eee7" stroke="#bdac9e" stroke-width="2"/>
+ <path d="M20 45 L101 37 L100 55 L22 64Z" fill="url(#red)"/>
+ <path d="M27 65 L98 57 L101 86 L29 94Z" fill="#faf7ef"/>
+ <circle cx="45" cy="75" r="10" fill="#fff" stroke="#dbd2c7"/><circle cx="69" cy="71" r="10" fill="#f4d8cf" stroke="#d1b5aa"/><circle cx="84" cy="82" r="8" fill="#fff" stroke="#d5c9be"/>
+ </g></g>
+<!-- 10 paperback -->
+<g transform="translate(256 256)"><g transform="rotate(14 64 64)" filter="url(#shadow)">
+ <path d="M24 33 L92 26 L102 84 L34 94Z" fill="#ded8cb" stroke="#807565" stroke-width="2"/>
+ <path d="M18 26 L87 19 L97 76 L28 85Z" fill="url(#blue)" stroke="#244b65" stroke-width="2"/>
+ <path d="M18 26 L28 85 L35 84 L26 27Z" fill="#f0e6ce"/>
+ <path d="M39 37 L77 32 M39 45 L76 41" stroke="#eaf8ff" stroke-width="3" opacity=".8"/>
+ <path d="M38 59 Q56 47 78 61 L77 72 L40 77Z" fill="#f1c774" opacity=".8"/>
+ <path d="M31 84 L97 77" stroke="#fff" stroke-width="2"/>
+ </g></g>
+<!-- 11 book stack -->
+<g transform="translate(384 256)"><g transform="rotate(-24 64 64)" filter="url(#shadow)">
+ <path d="M22 57 L94 43 L103 63 L31 80Z" fill="#e9ddd0" stroke="#9d8e7d"/>
+ <path d="M20 37 L91 25 L100 45 L28 61Z" fill="url(#red)" stroke="#8f3433" stroke-width="2"/>
+ <path d="M28 22 L98 13 L105 31 L35 44Z" fill="url(#green)" stroke="#436b41" stroke-width="2"/>
+ <path d="M30 28 L91 20 M32 43 L91 33 M33 64 L94 50" stroke="#fff4dd" stroke-width="3" opacity=".85"/>
+ <path d="M30 22 L35 44 L29 61 L31 80" stroke="#e8dccd" stroke-width="3"/>
+ </g></g>
+<!-- 12 plastic drink bottle -->
+<g transform="translate(0 384)"><g transform="rotate(27 64 64)" filter="url(#shadow)">
+ <path d="M53 17 L73 17 L74 29 L82 38 Q89 44 87 59 L80 99 Q63 108 42 98 L34 60 Q31 45 42 35 L50 28Z" fill="url(#blue)" stroke="#1d6284" stroke-width="2"/>
+ <path d="M52 12 L74 12 L74 21 L52 21Z" fill="#e8f5f9" stroke="#719ba9"/>
+ <path d="M39 55 L83 57 L78 82 L44 81Z" fill="#d5f3e6" stroke="#88b9a8" stroke-width="2"/>
+ <path d="M44 58 Q61 53 78 60" stroke="#fff" stroke-width="3" opacity=".7"/>
+ <path d="M47 34 Q54 29 56 44 L48 91" stroke="#d6f6ff" stroke-width="4" fill="none" opacity=".65"/>
+ </g></g>
+<!-- 13 can -->
+<g transform="translate(128 384)"><g transform="rotate(-21 64 64)" filter="url(#shadow)">
+ <rect x="25" y="37" width="78" height="54" rx="13" fill="url(#red)" stroke="#7d3033" stroke-width="2"/>
+ <ellipse cx="25" cy="64" rx="10" ry="27" fill="url(#metal)" stroke="#718087" stroke-width="2"/>
+ <ellipse cx="103" cy="64" rx="10" ry="27" fill="#aab6bb" stroke="#68777c" stroke-width="2"/>
+ <path d="M28 42 L99 42" stroke="#fff" stroke-width="4" opacity=".65"/>
+ <path d="M39 52 Q61 42 86 55 L85 75 Q63 82 39 74Z" fill="#fff4d5" opacity=".92"/>
+ <ellipse cx="25" cy="64" rx="4" ry="18" fill="#eef3f4"/>
+ </g></g>
+<!-- 14 snack bag -->
+<g transform="translate(256 384)"><g transform="rotate(16 64 64)" filter="url(#shadow)">
+ <path d="M27 24 L101 31 L94 47 L100 92 L22 99 L29 51Z" fill="url(#yellow)" stroke="#a86a29" stroke-width="2"/>
+ <path d="M29 27 L99 34 L94 47 L28 44Z" fill="#fff0a7" stroke="#c99b46"/>
+ <path d="M28 54 L96 57 L94 84 L25 87Z" fill="url(#red)"/>
+ <path d="M42 62 Q63 51 82 67 Q68 83 42 77Z" fill="#fff0c5"/>
+ <path d="M30 45 L36 93 M93 47 L88 91" stroke="#fff5c9" stroke-width="3" opacity=".7"/>
+ </g></g>
+<!-- 15 chocolate bar -->
+<g transform="translate(384 384)"><g transform="rotate(-13 64 64)" filter="url(#shadow)">
+ <path d="M21 38 L100 28 L106 87 L27 97Z" fill="url(#purple)" stroke="#514078" stroke-width="2"/>
+ <path d="M29 46 L92 38 L97 79 L34 87Z" fill="#f5e2c4" stroke="#c7a77d" stroke-width="2"/>
+ <path d="M37 50 L89 44 L93 72 L41 79Z" fill="#633c2d"/>
+ <path d="M40 52 L57 50 L59 62 L42 64Z M61 49 L77 47 L79 59 L62 61Z M43 67 L59 65 L61 77 L45 78Z M63 64 L81 62 L83 74 L65 76Z" fill="#9a6045" stroke="#d4a486" stroke-width="1.5"/>
+ <path d="M29 46 L92 38" stroke="#fff1df" stroke-width="3" opacity=".8"/>
+ </g></g>
+</svg>
