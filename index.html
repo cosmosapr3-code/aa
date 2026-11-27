@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no">
-<meta name="cm3d-build" content="2026-11-27T21:20:00+09:00">
+<meta name="cm3d-build" content="nearby-product-sprites-v2">
 <title>片付けマスター3D SHOP</title>
 <script>
 /**
@@ -588,6 +588,7 @@ function updateChunkVisibility(force=false){
 }
 const zeroM=new THREE.Matrix4().makeScale(0,0,0);
 const detailRestoreM=new THREE.Matrix4();
+const detailMatrix=new THREE.Matrix4();
 const nearbyDetailMeshes=new Map();   // sprite cell -> InstancedMesh
 const nearbyDetailSlots=new Map();    // item idx -> {mesh,slot}
 let nearbyDetailedItems=[],lastNearbyDetailAt=0;
