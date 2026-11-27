@@ -1,0 +1,111 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="384" viewBox="0 0 512 384">
+<defs>
+ <linearGradient id="pink" x2="0" y2="1"><stop stop-color="#ffd8e9"/><stop offset="1" stop-color="#ed80b3"/></linearGradient>
+ <linearGradient id="blue" x2="0" y2="1"><stop stop-color="#b9eeff"/><stop offset="1" stop-color="#2386c8"/></linearGradient>
+ <linearGradient id="green" x2="0" y2="1"><stop stop-color="#c8f5a1"/><stop offset="1" stop-color="#358f48"/></linearGradient>
+ <linearGradient id="ice" x2="0" y2="1"><stop stop-color="#fff3cf"/><stop offset="1" stop-color="#a66a37"/></linearGradient>
+ <linearGradient id="book" x2="0" y2="1"><stop stop-color="#496a9d"/><stop offset="1" stop-color="#172f55"/></linearGradient>
+ <filter id="shadow" x="-40%" y="-40%" width="180%" height="190%"><feGaussianBlur in="SourceAlpha" stdDeviation="3"/><feOffset dy="4"/><feComponentTransfer><feFuncA type="linear" slope=".25"/></feComponentTransfer><feMerge><feMergeNode/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+</defs>
+<!-- row 1: household goods -->
+<g transform="translate(0 0)" filter="url(#shadow)">
+ <ellipse cx="64" cy="111" rx="42" ry="7" fill="#243344" opacity=".2"/>
+ <path d="M18 42 L83 26 L111 43 L48 61 Z" fill="#fff0f6" stroke="#d66d9d" stroke-width="2"/>
+ <path d="M18 42 L48 61 L48 103 L18 84 Z" fill="#e88ab4" stroke="#c85c91" stroke-width="2"/>
+ <path d="M48 61 L111 43 L111 85 L48 103 Z" fill="url(#pink)" stroke="#c85c91" stroke-width="2"/>
+ <path d="M55 50 C60 30 78 28 82 48 C76 54 65 57 55 50" fill="#fff" stroke="#d7d7e0" stroke-width="2"/>
+ <path d="M62 46 Q70 30 79 43" fill="none" stroke="#fff" stroke-width="5"/>
+ <circle cx="91" cy="69" r="5" fill="#fff" opacity=".6"/>
+</g>
+<g transform="translate(128 0)" filter="url(#shadow)">
+ <ellipse cx="64" cy="111" rx="42" ry="7" fill="#243344" opacity=".2"/>
+ <g fill="#fff" stroke="#d7e0e8" stroke-width="2">
+  <ellipse cx="47" cy="46" rx="18" ry="13"/><path d="M29 46 V91 Q47 107 65 91 V46" fill="#f8fbff"/>
+  <ellipse cx="78" cy="46" rx="18" ry="13"/><path d="M60 46 V91 Q78 107 96 91 V46" fill="#f8fbff"/>
+ </g>
+ <path d="M30 67 Q47 72 64 67 V91 Q47 105 30 91Z" fill="#42a7dc"/>
+ <path d="M61 67 Q78 72 95 67 V91 Q78 105 61 91Z" fill="#42a7dc"/>
+ <g fill="none" stroke="#a8d8ee" stroke-width="2"><ellipse cx="47" cy="46" rx="8" ry="5"/><ellipse cx="78" cy="46" rx="8" ry="5"/></g>
+</g>
+<g transform="translate(256 0)" filter="url(#shadow)">
+ <ellipse cx="64" cy="111" rx="35" ry="7" fill="#243344" opacity=".2"/>
+ <path d="M40 39 Q40 28 52 28 H77 Q91 28 91 41 V100 Q91 109 80 109 H43 Q33 109 33 98 V49 Q33 39 40 39Z" fill="url(#blue)" stroke="#13669e" stroke-width="2"/>
+ <rect x="51" y="18" width="23" height="13" rx="3" fill="#1677bf"/>
+ <rect x="62" y="10" width="11" height="11" rx="3" fill="#1677bf"/>
+ <path d="M62 10 H89 Q94 10 94 15" fill="none" stroke="#1677bf" stroke-width="7" stroke-linecap="round"/>
+ <path d="M43 61 Q63 52 82 61" fill="none" stroke="#e5faff" stroke-width="5" opacity=".85"/>
+ <circle cx="53" cy="77" r="7" fill="#fff" opacity=".5"/>
+</g>
+<g transform="translate(384 0)" filter="url(#shadow)">
+ <ellipse cx="64" cy="111" rx="42" ry="7" fill="#243344" opacity=".2"/>
+ <path d="M37 37 Q35 28 46 24 L77 18 Q91 17 94 30 L99 93 Q100 103 88 106 L45 108 Q34 107 33 96Z" fill="url(#green)" stroke="#337c39" stroke-width="2"/>
+ <path d="M77 19 Q77 8 87 8 H94 Q102 8 102 18 L101 29 H78Z" fill="#278143" stroke="#226b35" stroke-width="2"/>
+ <path d="M44 56 Q66 40 86 57 Q77 79 57 79 Q45 72 44 56Z" fill="#f6f4d2"/>
+ <path d="M48 58 Q65 44 81 58 Q67 72 57 70Z" fill="#73b944"/>
+</g>
+<!-- row 2: ice cream -->
+<g transform="translate(0 128)" filter="url(#shadow)">
+ <ellipse cx="64" cy="112" rx="43" ry="7" fill="#243344" opacity=".2"/>
+ <path d="M20 54 Q20 42 31 37 L91 20 Q103 17 109 29 L119 69 Q122 81 108 85 L49 104 Q36 108 29 97Z" fill="#f5ead4" stroke="#9e6b44" stroke-width="2"/>
+ <path d="M28 51 Q28 43 39 39 L94 25 Q104 23 109 35 L115 56 L35 80Z" fill="#75422e"/>
+ <path d="M35 80 L115 56 L119 69 Q121 80 108 85 L49 104 Q36 108 29 97Z" fill="#d2a06b"/>
+ <g fill="#f1c77c"><circle cx="45" cy="51" r="3"/><circle cx="63" cy="45" r="3"/><circle cx="82" cy="39" r="3"/><circle cx="98" cy="35" r="3"/></g>
+</g>
+<g transform="translate(128 128)" filter="url(#shadow)">
+ <ellipse cx="64" cy="111" rx="38" ry="7" fill="#243344" opacity=".2"/>
+ <path d="M28 48 Q28 29 64 29 Q100 29 100 48 V91 Q98 108 64 108 Q30 108 28 91Z" fill="#2c60a9" stroke="#193b74" stroke-width="3"/>
+ <ellipse cx="64" cy="48" rx="36" ry="18" fill="#244f91" stroke="#b6dfff" stroke-width="3"/>
+ <ellipse cx="64" cy="47" rx="27" ry="11" fill="#fff1c8"/>
+ <path d="M45 43 Q57 28 75 43 Q84 52 68 56 Q50 58 45 43Z" fill="#f8e1a5"/>
+ <path d="M36 71 V90 Q64 108 92 90 V71" fill="#fff" opacity=".85"/>
+</g>
+<g transform="translate(256 128)" filter="url(#shadow)">
+ <ellipse cx="64" cy="112" rx="38" ry="7" fill="#243344" opacity=".2"/>
+ <path d="M31 45 L97 45 L65 111Z" fill="#d7a15d" stroke="#9b632e" stroke-width="2"/>
+ <path d="M31 45 L97 45 L65 111Z" fill="none" stroke="#f4d19a" stroke-width="4" stroke-dasharray="5 7"/>
+ <path d="M34 45 Q31 14 64 18 Q100 17 97 45 Q88 67 64 61 Q40 65 34 45Z" fill="#fff0ce" stroke="#b77a52" stroke-width="2"/>
+ <path d="M42 31 Q58 12 77 31 Q91 42 74 47 Q54 54 42 31Z" fill="#6d3929"/>
+ <path d="M43 31 Q59 22 69 35" fill="none" stroke="#fff" stroke-width="5" opacity=".6"/>
+</g>
+<g transform="translate(384 128)" filter="url(#shadow)">
+ <ellipse cx="64" cy="111" rx="43" ry="7" fill="#243344" opacity=".2"/>
+ <path d="M15 37 L65 23 L111 39 L111 98 L61 113 L15 94Z" fill="#2864bd" stroke="#17427f" stroke-width="2"/>
+ <path d="M15 37 L61 54 L111 39" fill="none" stroke="#d8eaff" stroke-width="3"/>
+ <g stroke="#fff" stroke-width="2"><circle cx="38" cy="68" r="12" fill="#f6a22f"/><circle cx="67" cy="69" r="12" fill="#f06a9b"/><circle cx="90" cy="69" r="12" fill="#f5df9e"/></g>
+ <path d="M23 89 Q60 71 105 88" fill="none" stroke="#f3f3ed" stroke-width="9" stroke-linecap="round"/>
+</g>
+<!-- row 3: books -->
+<g transform="translate(0 256)" filter="url(#shadow)">
+ <ellipse cx="64" cy="111" rx="37" ry="7" fill="#243344" opacity=".2"/>
+ <path d="M30 17 Q31 12 39 14 L91 21 Q98 23 98 31 V103 Q94 108 86 105 L32 96Z" fill="url(#book)" stroke="#101f3c" stroke-width="3"/>
+ <path d="M30 17 Q39 14 43 21 V101 L32 96Z" fill="#19304f"/>
+ <path d="M48 30 L84 34" stroke="#d7e5f4" stroke-width="3"/>
+ <path d="M48 41 L81 45" stroke="#9cb7d5" stroke-width="2"/>
+ <path d="M47 79 L83 84" stroke="#9cb7d5" stroke-width="2"/>
+ <path d="M35 21 L41 23 V95 L35 93Z" fill="#c8a85e"/>
+</g>
+<g transform="translate(128 256)" filter="url(#shadow)">
+ <ellipse cx="64" cy="111" rx="38" ry="7" fill="#243344" opacity=".2"/>
+ <path d="M23 24 L82 12 L104 24 V100 L43 112 L23 99Z" fill="#4d83bb" stroke="#244b78" stroke-width="3"/>
+ <path d="M23 24 L43 36 V112 L23 99Z" fill="#e6e8db"/>
+ <path d="M50 46 Q72 27 92 46 L92 75 Q68 90 50 72Z" fill="#88c37b"/>
+ <path d="M50 77 L90 77" stroke="#e8f5e1" stroke-width="4"/>
+</g>
+<g transform="translate(256 256)" filter="url(#shadow)">
+ <ellipse cx="64" cy="111" rx="44" ry="7" fill="#243344" opacity=".2"/>
+ <path d="M23 40 L88 27 L111 38 L47 52Z" fill="#4b82cb"/><path d="M23 40 L47 52 L47 70 L23 59Z" fill="#1b4e8a"/><path d="M47 52 L111 38 L111 56 L47 70Z" fill="#285b9d"/>
+ <path d="M22 60 L87 48 L111 59 L46 74Z" fill="#5aa65d"/><path d="M22 60 L46 74 L46 90 L22 76Z" fill="#2d733b"/><path d="M46 74 L111 59 L111 76 L46 90Z" fill="#397c46"/>
+ <path d="M22 78 L87 65 L111 78 L46 92Z" fill="#ce5555"/><path d="M22 78 L46 92 L46 108 L22 94Z" fill="#983d44"/><path d="M46 92 L111 78 L111 95 L46 108Z" fill="#b5444a"/>
+</g>
+<g transform="translate(384 256)" filter="url(#shadow)">
+ <ellipse cx="64" cy="111" rx="44" ry="7" fill="#243344" opacity=".2"/>
+ <g stroke="#20324a" stroke-width="1">
+  <path d="M17 31 L38 25 V105 L17 99Z" fill="#bd554a"/>
+  <path d="M36 23 L57 28 V105 L36 100Z" fill="#e2aa47"/>
+  <path d="M55 29 L76 22 V103 L55 108Z" fill="#528b5b"/>
+  <path d="M74 24 L93 17 V101 L74 104Z" fill="#4b79bb"/>
+  <path d="M91 20 L112 28 V96 L91 102Z" fill="#8c65a6"/>
+ </g>
+ <g stroke="#f8e8cf" stroke-width="2" opacity=".8"><path d="M22 39 L33 36"/><path d="M41 37 L52 40"/><path d="M60 39 L71 35"/><path d="M79 35 L89 31"/><path d="M96 37 L107 41"/></g>
+</g>
+</svg>
