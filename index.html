@@ -18,7 +18,7 @@ html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#14161c;fon
 #c{position:fixed;inset:0;display:block;width:100%;height:100%;z-index:0;background:#8da5b5}
 #hud{position:fixed;left:8px;top:8px;right:180px;pointer-events:none;font:700 13px system-ui;color:#fff;text-shadow:0 1px 3px #000;z-index:5;line-height:1.5}
 #prompt{position:fixed;left:50%;top:56%;transform:translateX(-50%);pointer-events:none;font:700 16px system-ui;color:#ffe14a;text-shadow:0 2px 4px #000;z-index:5}
-#tut{position:fixed;left:50%;top:62%;transform:translateX(-50%);pointer-events:none;font:700 15px system-ui;color:#7fe0ff;background:#101820cc;padding:8px 14px;border-radius:10px;z-index:5}
+#tut{position:fixed;left:50%;top:62%;transform:translateX(-50%);pointer-events:none;font:700 15px system-ui;color:#7fe0ff;background:#101820cc;padding:8px 14px;border-radius:10px;z-index:5;max-width:88vw;text-align:center}#tutSkip{position:fixed;left:50%;top:calc(62% + 48px);transform:translateX(-50%);display:none;pointer-events:auto;z-index:8;padding:7px 12px;border:1px solid #80d8ff;border-radius:8px;background:#152c3bef;color:#fff;font-weight:700}#inventory{position:fixed;left:50%;bottom:14px;transform:translateX(-50%);z-index:6;display:none;max-width:92vw;min-width:min(320px,92vw);box-sizing:border-box;padding:8px 12px;border:1px solid #82b9d9;border-radius:12px;background:#111d2bef;color:#fff;text-align:center;text-shadow:0 1px 2px #000;font:600 12px/1.5 system-ui;pointer-events:none}#inventory .inv-items{display:flex;justify-content:center;gap:6px;flex-wrap:wrap;margin-top:4px}#inventory .inv-item{padding:4px 8px;border:1px solid #7f9bb0;border-radius:7px;background:#263b50;color:#fff}#inventory .inv-empty{color:#c8d5df}
 #toast{position:fixed;left:50%;top:12%;transform:translateX(-50%);pointer-events:none;font:700 16px system-ui;color:#fff;text-shadow:0 2px 4px #000;z-index:9;opacity:0;transition:opacity .4s;text-align:center;max-width:80%}
 #minimap{position:fixed;right:8px;top:8px;width:168px;height:101px;border:2px solid #2a5fd0;border-radius:8px;z-index:5}
 #panel{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);width:min(720px,94vw);max-height:82vh;overflow:auto;display:none;background:#2a2018f2;border:3px solid #8a6a30;border-radius:14px;padding:14px;z-index:10;color:#f0e6d0}
@@ -65,6 +65,8 @@ html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#14161c;fon
 <div id="hud"></div>
 <div id="prompt"></div>
 <div id="tut" style="display:none"></div>
+<button id="tutSkip" type="button" style="display:none">チュートリアルをスキップ</button>
+<div id="inventory" aria-live="polite"></div>
 <div id="toast"></div>
 <div id="gameRuntimeError" role="alert"></div>
 <canvas id="minimap" width="168" height="101"></canvas>
@@ -620,11 +622,14 @@ let combo=0,comboT=0;
 function aimTarget(){
  /* 視線方向の近い対象(グリッド直線サンプル) */
  const dx=-Math.sin(player.yaw)*Math.cos(player.pitch),dz=-Math.cos(player.yaw)*Math.cos(player.pitch);
- let best=null,bd=magnet()+3;
+ const bd=magnet()+3;
  for(let s=0.5;s<bd;s+=0.5){
   const it=nearestItem(player.x+dx*s,player.z+dz*s,1.2);
   if(it)return{kind:"item",it};
  }
+ /* 視線が少し外れていても、足元の近い商品は拾える */
+ const nearby=nearestItem(player.x,player.z,1.8);
+ if(nearby)return{kind:"item",it:nearby};
  /* 棚 */
  for(const sh of shelves){
   const b=sh.bbox;
@@ -636,19 +641,20 @@ function aimTarget(){
  return null;
 }
 function interact(){
- const a=aimTarget();if(!a)return;
+ const a=aimTarget();if(!a){toast("近くの商品に近づいて E キーで拾ってください");return}
  if(a.kind==="item"){
   const it=a.it;
   if(carry.length>=carryCap()){toast("持ち物がいっぱい!カートを買おう");return}
   takeInstance(it.t,it.idx,1);
   carry.push({t:it.t});
+  toast("🛒 "+PRODUCTS[it.t].n+" を持ちました ("+carry.length+"/"+carryCap()+")");
   /* 自動仕分けベルト:確率で即納品 */
   if(rng2()<L("belt")*0.05){storeOne(it.t,null);toast("自動仕分けベルトが即納品!")}
   S.col++;combo++;comboT=3;sfx([520,780]);syncHeld();saveDirty=true;
  }else if(a.kind==="drop"){
   const d=a.di;
   if(carry.length>=carryCap()){toast("持ち物がいっぱい!");return}
-  carry.push({t:drops[d].t});scene.remove(drops[d].mesh);drops.splice(d,1);sfx([520,780]);syncHeld();saveDirty=true;
+  carry.push({t:drops[d].t});scene.remove(drops[d].mesh);drops.splice(d,1);sfx([520,780]);toast("🛒 "+PRODUCTS[carry[carry.length-1].t].n+" を持ちました ("+carry.length+"/"+carryCap()+")");syncHeld();saveDirty=true;
  }else if(a.kind==="shelf"){
   const sh=a.sh;let n=0;
   for(let i=carry.length-1;i>=0;i--){
@@ -843,6 +849,8 @@ function updateHUD(){
  const carryTxt=carry.length?("手持ち "+carry.length+"/"+carryCap()+" → "+[...new Set(carry.map(c=>CATS[PRODUCTS[c.t].c].n))].join("・")):"手持ちなし";
  $("hud").innerHTML="¥"+Math.floor(S.money)+" | 🎫"+S.tickets+" | Lv"+S.level+"("+Math.floor(S.xp)+"/"+xpNeed(S.level)+") AP:"+S.ap+" | 回収 "+S.col+"/"+TOTAL+" | コンボx"+combo+
  "<br><span style='font-weight:400'>"+carryTxt+(navText()?" | 🧭"+navText():"")+"</span><br><span style='font-weight:400;font-size:11px'>WASD移動・画面クリックでマウス視点開始（Esc解除）・E操作・G置く・Tゲート</span>";
+ const inv=$("inventory");
+ if(inv){inv.style.display="block";inv.innerHTML="<b>🛒 持ち物 "+carry.length+"/"+carryCap()+"</b><div class='inv-items'>"+(carry.length?carry.map(c=>"<span class='inv-item'>"+PRODUCTS[c.t].n+"</span>").join(""):"<span class='inv-empty'>なし — 商品に近づいて E で拾う</span>")+"</div>"}
 }
 /* ---------- パネル ---------- */
 let mode="";
@@ -988,14 +996,25 @@ $("btnInfo").addEventListener("click",()=>openPanel("info"));
 $("btnSettings").addEventListener("click",()=>openPanel("settings"));
 
 /* ---------- チュートリアル ---------- */
-const TUT=["WASD/矢印で自由に店内を移動しよう","点滅する商品をEで拾う(Gで置き直しもできる)","青い棚まで運んでEで収納!","スキル画面を開いて完了!"];
+const TUT=["WASD/矢印で自由に店内を移動しよう","近くの商品に近づいてEで拾う(Gで置き直しもできる)","持った商品と同じカテゴリの棚でEを押して収納!","スキル画面を開いて完了!"];
 let tutStep=0;
+const tutorialStart={x:player.x,z:player.z};
+$("tutSkip").addEventListener("click",()=>{
+ S.tutorialDone=true;saveDirty=true;$("tut").style.display="none";$("tutSkip").style.display="none";
+ toast("チュートリアルをスキップしました");
+});
 function updateTut(){
- if(S.tutorialDone){$("tut").style.display="none";return}
- $("tut").style.display="block";$("tut").textContent="チュートリアル "+(tutStep+1)+"/4: "+TUT[Math.min(tutStep,3)];
- if(tutStep>=1&&carry.length)tutStep=Math.max(tutStep,2);
- if(tutStep>=2&&S.stored>0)tutStep=Math.max(tutStep,3);
- if(tutStep>=3&&mode==="skill"){S.tutorialDone=true;toast("チュートリアル完了!店内に散らばる30万個の商品を片付けよう!");saveDirty=true}
+ if(S.tutorialDone){$("tut").style.display="none";$("tutSkip").style.display="none";return}
+ /* 最初の移動ステップは開始位置から1m以上動けば必ず完了 */
+ if(tutStep===0&&Math.hypot(player.x-tutorialStart.x,player.z-tutorialStart.z)>=1){tutStep=1;toast("移動できました! 次は商品に近づいてEで拾おう")}
+ if(tutStep<=1&&carry.length)tutStep=2;
+ if(tutStep<=2&&S.stored>0)tutStep=3;
+ $("tut").style.display="block";$("tutSkip").style.display="block";
+ $("tut").textContent="チュートリアル "+(tutStep+1)+"/4: "+TUT[Math.min(tutStep,3)];
+ if(tutStep>=3&&mode==="skill"){
+  S.tutorialDone=true;toast("チュートリアル完了!店内を自由に探索しよう!");saveDirty=true;
+  $("tut").style.display="none";$("tutSkip").style.display="none";
+ }
 }
 /* チュートリアル用商品(境界内に3個置く) */
 const tutItems=[];
@@ -1006,8 +1025,16 @@ function placeTutItems(){
   const x=tz.x0+2+i*3,z=tz.z0+4;
   const idx=t*PER+i;const it=itemByIdx[idx];if(!it)continue;
   const oldCk=it.ck,newCk=ckOf(x,z);
-  if(oldCk!==newCk){const oldArr=chunkMap.get(oldCk);if(oldArr&&it.si>=0){const lastIt=oldArr[oldArr.length-1];oldArr[it.si]=lastIt;lastIt.si=it.si;oldArr.pop()}it.ck=newCk;const na=chunkMap.get(newCk)||[];it.si=na.length;na.push(it);chunkMap.set(newCk,na)}
+  /* 移動前の空間セル索引から除去。これが古いと商品が視界にあっても拾えない。 */
+  const oldGk=ckOfCell(it.x,it.z),oldGa=cellGrid.get(oldGk);
+  if(oldGa){const gi=oldGa.indexOf(it);if(gi>=0)oldGa.splice(gi,1);if(!oldGa.length)cellGrid.delete(oldGk)}
+  if(oldCk!==newCk){
+   const oldArr=chunkMap.get(oldCk);
+   if(oldArr&&it.si>=0&&it.si<oldArr.length){const lastIt=oldArr[oldArr.length-1];oldArr[it.si]=lastIt;lastIt.si=it.si;oldArr.pop()}
+   it.ck=newCk;const na=chunkMap.get(newCk)||[];it.si=na.length;na.push(it);chunkMap.set(newCk,na);
+  }
   pos[idx*3]=x;pos[idx*3+1]=HGT[PRODUCTS[t].s]/2;pos[idx*3+2]=z;it.x=x;it.z=z;state[idx]=0;
+  const newGk=ckOfCell(x,z),newGa=cellGrid.get(newGk)||[];newGa.push(it);cellGrid.set(newGk,newGa);
   if(it.im){const m4=new THREE.Matrix4().makeTranslation(x,pos[idx*3+1],z);it.im.setMatrixAt(it.mi,m4);it.im.instanceMatrix.needsUpdate=true}
   tutItems.push({t,idx});
  }
@@ -1016,7 +1043,7 @@ function placeTutItems(){
 /* ---------- クラウドセーブ/ロード ---------- */
 let saveDirty=false,lastSave=0;
 function collectSave(){
- return {v:S.v,money:S.money,xp:S.xp,level:S.level,ap:S.ap,skills:S.skills,machines:S.machines,gk:S.gk,tickets:S.tickets,col:S.col,stored:S.stored,found:S.found,titles:S.titles,missions:S.missions,rareFound:S.rareFound,tutorialDone:S.tutorialDone,prestige:S.prestige,time:S.time,drops:drops.map(d=>({t:d.t,x:d.x,z:d.z}))};
+ return {v:S.v,money:S.money,xp:S.xp,level:S.level,ap:S.ap,skills:S.skills,machines:S.machines,gk:S.gk,tickets:S.tickets,col:S.col,stored:S.stored,found:S.found,titles:S.titles,missions:S.missions,rareFound:S.rareFound,tutorialDone:S.tutorialDone,prestige:S.prestige,time:S.time,carry:carry.map(c=>({t:c.t})),drops:drops.map(d=>({t:d.t,x:d.x,z:d.z}))};
 }
 async function cloudSave(){
  try{
@@ -1171,6 +1198,12 @@ function applySave(d){
   drops:Array.isArray(data.drops)?data.drops:[],
   missions:data.missions&&typeof data.missions==="object"?data.missions:base.missions
  };
+ carry.length=0;
+ if(Array.isArray(data.carry))data.carry.forEach(item=>{
+  const t=Number(item&&item.t);
+  if(Number.isInteger(t)&&t>=0&&t<PRODUCTS.length&&carry.length<carryCap())carry.push({t});
+ });
+ syncHeld();
  S.drops.forEach(dd=>{
   if(!dd||!Number.isInteger(Number(dd.t))||!Number.isFinite(Number(dd.x))||!Number.isFinite(Number(dd.z)))return;
   const t=clamp(Number(dd.t),0,PRODUCTS.length-1),x=Number(dd.x),z=Number(dd.z);
