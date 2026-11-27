@@ -1064,7 +1064,7 @@ function renderMusic(p,refresh=false){
   let html="<div style='display:grid;gap:8px'>";
   tracks.forEach(track=>{
    const owned=track.free||(S.ownedMusic||[]).includes(track.name);
-   const title=track.name.replace(/\.(mp3|ogg|wav)$/i,"").replace(/[_-]+/g," ");
+   const title=track.builtin?"おだやかな店内BGM":track.name.replace(/\.(mp3|ogg|wav)$/i,"").replace(/[_-]+/g," ");
    const playing=musicIsPlaying(track);
    html+="<div style='display:flex;gap:10px;align-items:center;justify-content:space-between;padding:9px;border:1px solid #8a6a30;border-radius:9px;background:#191d25'>";
    html+="<div style='min-width:0'><b>"+escapeMusicText(title)+"</b><div style='font-size:11px;color:#c8b890'>"+(track.free?"無料":owned?"購入済み":"価格: "+MUSIC_PRICE+"コイン")+(playing?" ・再生中":"")+"</div></div>";
