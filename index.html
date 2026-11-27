@@ -1135,7 +1135,7 @@ function navText(){
 function updateHUD(){
  const carryTxt=carry.length?("手持ち "+carry.length+"/"+carryCap()+" → "+[...new Set(carry.map(c=>CATS[PRODUCTS[c.t].c].n))].join("・")):"手持ちなし";
  $("hud").innerHTML="¥"+Math.floor(S.money)+" | 🎫"+S.tickets+" | Lv"+S.level+"("+Math.floor(S.xp)+"/"+xpNeed(S.level)+") AP:"+S.ap+" | 回収 "+S.col+"/"+TOTAL+" | コンボx"+combo+
- "<br><span style='font-weight:400'>"+carryTxt+(navText()?" | 🧭"+navText():"")+"</span><br><span style='font-weight:400;font-size:11px'>WASD移動・画面クリックでマウス視点開始（Esc解除）・E操作・G置く・Tゲート</span>";
+ "<br><span style='font-weight:400'>"+carryTxt+(navText()?" | 🧭"+navText():"")+"</span><br><span style='font-weight:400;font-size:11px'>移動:"+keyLabel(keyBinds.forward)+"/"+keyLabel(keyBinds.backward)+"/"+keyLabel(keyBinds.left)+"/"+keyLabel(keyBinds.right)+"・ジャンプ:"+keyLabel(keyBinds.jump)+"・操作:"+keyLabel(keyBinds.interact)+"・スキル:"+keyLabel(keyBinds.skill)+"・ショップ:"+keyLabel(keyBinds.shop)+"・情報:"+keyLabel(keyBinds.info)+"・BGM:"+keyLabel(keyBinds.music)+"・設定:"+keyLabel(keyBinds.settings)+"</span>";
  const inv=$("inventory");
  if(inv){inv.style.display="block";inv.innerHTML="<b>🛒 持ち物 "+carry.length+"/"+carryCap()+"</b><div class='inv-items'>"+(carry.length?carry.map(c=>"<span class='inv-item'>"+PRODUCTS[c.t].n+"</span>").join(""):"<span class='inv-empty'>なし — 商品に近づいて E で拾う</span>")+"</div>"}
 }
@@ -1568,12 +1568,12 @@ function loop(){
     let rr=null;
     for(const r of rareMeshes)if(!r.taken&&Math.hypot(r.x-player.x,r.z-player.z)<magnet()&&pickupPathClear(r.x,0.3,r.z)){rr=r;break}
     if(rr){
-     prompt="✨"+RARES[rr.ri].n+":"+RARES[rr.ri].d+"(Eで獲得)";
+     prompt="✨"+RARES[rr.ri].n+":"+RARES[rr.ri].d+"("+keyLabel(keyBinds.interact)+"で獲得)";
      if(actionDown("interact")&&!keys.__rrl){takeRare(rr);keys.__rrl=true}else if(!actionDown("interact"))keys.__rrl=false;
-    }else prompt="Eで回収: "+PRODUCTS[a.it.t].n;
-   }else if(a&&a.kind==="shelf")prompt="Eで収納: "+a.sh.name+"(収納"+a.sh.stored.length+"個)";
-   else if(a&&a.kind==="gacha")prompt="Eでガチャ(券"+S.tickets+")";
-   else if(a&&a.kind==="drop")prompt="Eで拾う: "+PRODUCTS[drops[a.di].t].n;
+    }else prompt=keyLabel(keyBinds.interact)+"で回収: "+PRODUCTS[a.it.t].n;
+   }else if(a&&a.kind==="shelf")prompt=keyLabel(keyBinds.interact)+"で収納: "+a.sh.name+"(収納"+a.sh.stored.length+"個)";
+   else if(a&&a.kind==="gacha")prompt=keyLabel(keyBinds.interact)+"でガチャ(券"+S.tickets+")";
+   else if(a&&a.kind==="drop")prompt=keyLabel(keyBinds.interact)+"で拾う: "+PRODUCTS[drops[a.di].t].n;
    else if(document.pointerLockElement!==canvas)prompt="画面を一度クリックするとマウス視点操作（Escで解除）";
    $("prompt").textContent=prompt;
   });
@@ -1654,7 +1654,7 @@ async function startGame(loaded,alreadyLoaded=false){
 }
 function applySave(d){
  const base=fresh(),data=d&&typeof d==="object"?d:{};
- S={...base,...data,
+ S={...base,...data,ap:Math.max(0,Math.floor(Number(data.ap)||0)),
   skills:data.skills&&typeof data.skills==="object"&&!Array.isArray(data.skills)?{...data.skills}:{},
   machines:data.machines&&typeof data.machines==="object"&&!Array.isArray(data.machines)?{...data.machines}:{},
   gk:Array.isArray(data.gk)?data.gk:base.gk,
