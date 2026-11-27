@@ -352,16 +352,27 @@ const HGT=[0.30,0.34,0.34,0.24,0.16,0.34,0.36,0.22,0.34,0.18,0.34,0.12,0.30,0.30
 const prodMats=CATS.map(c=>new THREE.MeshLambertMaterial({color:c.col}));
 /* 近距離だけ使う商品別パッケージ画像。遠距離はカテゴリ共通マテリアルのまま。 */
 /* 実画像アトラス。12種類の透明背景アイコンを必要な時だけテクスチャ化する。 */
-const PRODUCT_ATLAS_URL="./assets/product-icons.svg?v=20261127-2120";
+let productRenderDistance=8.5;
+try{const savedRange=Number(localStorage.getItem("cm3d_product_render_distance"));if(Number.isFinite(savedRange))productRenderDistance=Math.max(4,Math.min(24,savedRange))}catch(e){}
+const PRODUCT_ATLAS_URL="./assets/product-photo-atlas.webp?v=20261127-photos-1";
 const productAtlasImage=new Image();
 let productAtlasReady=false;
 const detailProductMaterials=new Map();
 function productIconCell(t){
  const p=PRODUCTS[t],n=((t%10)+10)%10;
- if(p.c===0)return [0,1,3,2,2,3,0,2,1,3][n];       // 日用品
- if(p.c===2)return [4,4,5,7,7,6,4,7,5,7][n];       // アイス
- if(p.c===3)return [8,11,10,8,9,10,11,8,10,9][n];  // 書籍
- return -1;
+ const map=[
+  [0,1,2,3,4,5,2,3,0,4],
+  [14,15,14,14,15,14,14,15,10,15],
+  [6,6,7,9,7,8,8,9,7,8],
+  [10,11,11,10,10,10,11,10,10,11],
+  [12,12,12,13,13,3,12,12,13,13],
+  [14,15,14,14,15,14,14,15,14,14],
+  [10,4,4,10,4,3,0,10,0,3],
+  [11,9,11,11,9,8,11,11,9,11],
+  [2,13,4,2,13,2,13,4,2,13],
+  [3,1,5,2,3,4,3,5,1,4]
+ ];
+ return map[p.c] ? map[p.c][n] : -1;
 }
 function detailProductMaterial(sprite){
  if(detailProductMaterials.has(sprite))return detailProductMaterials.get(sprite);
@@ -383,11 +394,11 @@ function detailProductMaterial(sprite){
 productAtlasImage.onload=()=>{
  productAtlasReady=true;
  detailProductMaterials.clear();
- for(const [sprite,mesh] of nearbyDetailMeshes){
-  mesh.material=detailProductMaterial(sprite);
- }
+ for(const [sprite,mesh] of nearbyDetailMeshes)mesh.material=detailProductMaterial(sprite);
+ /* 写真が読めたら遠距離用の単色モデルを隠し、近距離の写真だけ表示 */
+ if(typeof chunkRenderInfo!=="undefined")for(const info of chunkRenderInfo.values())for(const mesh of info.meshes)mesh.visible=false;
  if(typeof refreshNearbyDetails==="function")refreshNearbyDetails(true);
- console.info("[CM3D] real product icon atlas loaded");
+ console.info("[CM3D] 16-cell product photo atlas loaded");
 };
 productAtlasImage.onerror=()=>console.error("[CM3D] product icon atlas failed:",PRODUCT_ATLAS_URL);
 productAtlasImage.src=PRODUCT_ATLAS_URL;
@@ -578,7 +589,8 @@ function updateChunkVisibility(force=false){
  for(const info of chunkRenderInfo.values()){
   const dx=Math.max(info.x0-player.x,0,player.x-info.x1),dz=Math.max(info.z0-player.z,0,player.z-info.z1);
   const distance=Math.hypot(dx,dz);
-  const ratio=distance<14?1:(distance<27?0.10:0);
+  const fullRange=productRenderDistance+3,fadeRange=productRenderDistance+9;
+  const ratio=distance<fullRange?1:(distance<fadeRange?0.10:0);
   info.group.visible=ratio>0;
   for(const mesh of info.meshes){
    const count=ratio===1?mesh.userData.cmFullCount:(ratio>0?Math.max(1,Math.floor(mesh.userData.cmFullCount*ratio)):0);
@@ -593,11 +605,11 @@ const nearbyDetailMeshes=new Map();   // sprite cell -> InstancedMesh
 const nearbyDetailSlots=new Map();    // item idx -> {mesh,slot}
 let nearbyDetailedItems=[],lastNearbyDetailAt=0;
 const detailPlaneGeometry=new THREE.PlaneGeometry(1,1);
-const detailUpAxis=new THREE.Vector3(0,1,0);
-const detailBillboardQuaternion=new THREE.Quaternion();
+const detailUpAxis=new THREE.Vector3(0,1,0),detailLeanAxis=new THREE.Vector3(1,0,0);
+const detailBillboardQuaternion=new THREE.Quaternion(),detailLeanQuaternion=new THREE.Quaternion();
 const detailBillboardScale=new THREE.Vector3(1,1,1);
 const detailBillboardPosition=new THREE.Vector3();
-function nearestItemsInRadius(x,z,r,maxN){
+function nearestItemsInRadius(x,z,r,maxN=Math.min(4096,Math.max(256,Math.round(1024*Math.pow(r/8.5,2))))){
  const out=[],r2=r*r;
  for(const arr of cellsAround(x,z,r))for(const it of arr){
   if(state[it.idx]||!it.im||!it.im.parent.visible||it.mi>=it.im.count)continue;
@@ -622,30 +634,37 @@ function refreshNearbyDetails(force=false){
  nearbyDetailedItems=[];
  nearbyDetailSlots.clear();
  for(const mesh of nearbyDetailMeshes.values())mesh.count=0;
- /* 8.5m以内の最も近い64個だけ、実画像のアイコンをカメラ向きカードで描画 */
- const closeItems=nearestItemsInRadius(player.x,player.z,8.5,64),bySprite=new Map();
+ /* 設定距離内の商品写真を最大4096個まで描画 */
+ const closeItems=nearestItemsInRadius(player.x,player.z,productRenderDistance),bySprite=new Map();
  for(const it of closeItems){
   const sprite=productIconCell(it.t);
   let group=bySprite.get(sprite);
   if(!group){group=[];bySprite.set(sprite,group)}
   group.push(it);
  }
- detailBillboardQuaternion.setFromAxisAngle(detailUpAxis,player.yaw);
  for(const [sprite,list] of bySprite){
   let mesh=nearbyDetailMeshes.get(sprite);
-  if(!mesh){
-   mesh=new THREE.InstancedMesh(detailPlaneGeometry,detailProductMaterial(sprite),64);
+  const capacity=mesh?Math.floor(mesh.instanceMatrix.array.length/16):0;
+  if(!mesh||capacity<list.length){
+   if(mesh){scene.remove(mesh);if(typeof mesh.dispose==="function")mesh.dispose()}
+   const cap=Math.max(64,Math.pow(2,Math.ceil(Math.log2(Math.max(1,list.length)))));
+   mesh=new THREE.InstancedMesh(detailPlaneGeometry,detailProductMaterial(sprite),cap);
    mesh.count=0;mesh.frustumCulled=false;mesh.renderOrder=4;
    scene.add(mesh);nearbyDetailMeshes.set(sprite,mesh);
   }
   for(let i=0;i<list.length;i++){
    const it=list[i],idx=it.idx;
-   /* 画像カードを商品本体の少し手前・上に配置し、常にプレイヤー側へ向ける */
+   /* 実物が床に倒れているように、商品ごとに傾きと向きを少し変える */
    detailBillboardPosition.set(
-    it.x+Math.sin(player.yaw)*0.24,
-    pos[idx*3+1]+0.28,
-    it.z+Math.cos(player.yaw)*0.24
+    it.x+Math.sin(player.yaw)*0.18,
+    pos[idx*3+1]+0.32,
+    it.z+Math.cos(player.yaw)*0.18
    );
+   detailBillboardQuaternion.setFromAxisAngle(detailUpAxis,player.yaw);
+   const leanSign=(idx%2===0)?1:-1;
+   const leanAngle=leanSign*(0.45+((idx*17)%7)*0.075);
+   detailLeanQuaternion.setFromAxisAngle(detailLeanAxis,leanAngle);
+   detailBillboardQuaternion.multiply(detailLeanQuaternion);
    detailMatrix.compose(detailBillboardPosition,detailBillboardQuaternion,detailBillboardScale);
    mesh.setMatrixAt(i,detailMatrix);
    it.im.setMatrixAt(it.mi,zeroM);
