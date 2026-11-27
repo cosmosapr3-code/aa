@@ -1542,7 +1542,7 @@ function loop(){
   jumpRequested=false;
   player.vy-=15*dt;player.feet+=player.vy*dt;
   if(player.feet<0){player.feet=0;player.vy=0}
-  hands.position.y=player.feet+Math.sin(S.time*(l>0?9:2))*(l>0?0.02:0.005);
+  hands.position.y=Math.sin(S.time*(l>0?9:2))*(l>0?0.02:0.005);
   updateChunkVisibility(false);
   refreshNearbyDetails(false);
   /* 自動拾いスキル */
