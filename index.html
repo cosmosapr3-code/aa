@@ -592,7 +592,7 @@ const detailMatrix=new THREE.Matrix4();
 const nearbyDetailMeshes=new Map();   // sprite cell -> InstancedMesh
 const nearbyDetailSlots=new Map();    // item idx -> {mesh,slot}
 let nearbyDetailedItems=[],lastNearbyDetailAt=0;
-const detailPlaneGeometry=new THREE.PlaneGeometry(0.74,0.74);
+const detailPlaneGeometry=new THREE.PlaneGeometry(1,1);
 const detailUpAxis=new THREE.Vector3(0,1,0);
 const detailBillboardQuaternion=new THREE.Quaternion();
 const detailBillboardScale=new THREE.Vector3(1,1,1);
