@@ -1336,27 +1336,38 @@ const SKILLS=[
  {id:"gold",br:3,n:"金運",d:"大当たり確率+10%/Lv",pr:"ticket"},
  {id:"star",br:3,n:"星の導き",d:"全スキル効果+5%/Lv",pr:"gold"}];
 function skEffect(id){let v=sk(id);if(id!=="star")v=Math.round(v*(1+0.05*sk("star")));return v}
-function renderSkill(p){
- const myl=skEffect;
- let html="<div class='sk-head'><span class='sk-title'>SKILL TREE</span><span class='sk-ap'>AP "+S.ap+"</span></div>";
+function renderSkill(p,selectedId=""){
+ const apNow=Math.max(0,Math.floor(Number(S.ap)||0));
+ let html="<div class='sk-head'><span class='sk-title'>SKILL TREE</span><span class='sk-ap'>AP "+apNow+"</span></div><div style='font-size:12px;color:#e9d4a0;margin-bottom:8px'>スキルを選択して、必要APを確認してから購入できます。</div>";
  html+="<div class='sk-grid'>";
- SKILLS.forEach(s=>{
-  const lv=sk(s.id),locked=s.pr&&sk(s.pr)<1;
-  html+="<div class='sk-node "+(locked?"lock":"")+"' data-id='"+s.id+"'><b>"+s.n+"</b><span>Lv "+lv+"/10</span><span class='sk-cost'>"+(lv>=10?"MAX":"AP "+(1+Math.floor(lv/4)))+"</span></div>";
+ SKILLS.forEach(skill=>{
+  const lv=sk(skill.id),locked=!!(skill.pr&&sk(skill.pr)<1),cost=1+Math.floor(lv/4);
+  html+="<div class='sk-node "+(locked?"lock":"")+"' data-id='"+skill.id+"'><b>"+skill.n+"</b><span>Lv "+lv+"/10</span><span class='sk-cost'>"+(lv>=10?"MAX":"AP "+cost)+"</span></div>";
  });
  html+="</div><div id='skDetail' class='sk-detail'>スキルを選択してね</div>";
  p.innerHTML=html;
- p.querySelectorAll(".sk-node").forEach(el=>el.addEventListener("click",()=>{
-  const s=SKILLS.find(x=>x.id===el.dataset.id),lv=sk(s.id);
-  $("skDetail").innerHTML="<b>"+s.n+" Lv"+lv+"/10</b><br>"+s.d+"<br>"+(lv>=10?"最大レベルです":locked?"前提スキル["+SKILLS.find(x=>x.id===s.pr).n+"]が必要":"<button id='skUp'>LVアップ (AP "+(1+Math.floor(lv/4))+")</button>");
+ function showSkill(skillId){
+  const skill=SKILLS.find(x=>x.id===skillId);if(!skill)return;
+  const lv=sk(skill.id),cost=1+Math.floor(lv/4),locked=!!(skill.pr&&sk(skill.pr)<1),ap=Math.max(0,Math.floor(Number(S.ap)||0));
+  let status="";
+  if(lv>=10)status="最大レベルです";
+  else if(locked){const prereq=SKILLS.find(x=>x.id===skill.pr);status="前提スキル「"+(prereq?prereq.n:skill.pr)+"」をLv1以上にしてください。"}
+  else if(ap<cost)status="APが不足しています。必要 "+cost+" / 所持 "+ap;
+  else status="購入可能です。必要AP: "+cost+" / 所持AP: "+ap;
+  $("skDetail").innerHTML="<b>"+skill.n+" Lv"+lv+"/10</b><br>"+skill.d+"<br><span style='font-size:12px;color:#e9d4a0'>"+status+"</span><br>"+(lv>=10||locked?"":"<button type='button' id='skUp' "+(ap<cost?"disabled":"")+">LVアップ (AP "+cost+")</button>");
   const btn=$("skUp");
-  if(btn)btn.addEventListener("click",()=>{
-   const cost=1+Math.floor(sk(s.id)/4);
-   if(s.pr&&sk(s.pr)<1)return;
-   if(sk(s.id)>=10||S.ap<cost)return;
-   S.ap-=cost;S.skills[s.id]=sk(s.id)+1;toast(s.n+" Lv"+sk(s.id)+"!");saveDirty=true;renderSkill(p);
+  if(btn)btn.addEventListener("click",ev=>{
+   ev.preventDefault();ev.stopPropagation();
+   const current=sk(skill.id),available=Math.max(0,Math.floor(Number(S.ap)||0)),price=1+Math.floor(current/4);
+   if(skill.pr&&sk(skill.pr)<1){toast("先に前提スキルをLv1にしてください");showSkill(skill.id);return}
+   if(current>=10){toast("このスキルは最大レベルです");showSkill(skill.id);return}
+   if(available<price){toast("APが足りません。必要 "+price+" / 所持 "+available);showSkill(skill.id);return}
+   S.ap=available-price;S.skills[skill.id]=current+1;saveDirty=true;
+   toast(skill.n+" をLv"+(current+1)+"にしました（残りAP "+S.ap+"）");renderSkill(p,skill.id);
   });
- }));
+ }
+ p.querySelectorAll(".sk-node").forEach(el=>el.addEventListener("click",()=>showSkill(el.dataset.id)));
+ if(selectedId&&SKILLS.some(x=>x.id===selectedId))showSkill(selectedId);
 }
 /* ショップ(Lv10解放・15設備) */
 const MACH=[
