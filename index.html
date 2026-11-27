@@ -3,6 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no">
+<meta name="cm3d-build" content="2026-11-27T21:20:00+09:00">
 <title>片付けマスター3D SHOP</title>
 <script>
 /**
@@ -350,45 +351,46 @@ const HGT=[0.30,0.34,0.34,0.24,0.16,0.34,0.36,0.22,0.34,0.18,0.34,0.12,0.30,0.30
 /* 100種類を10カテゴリの共有マテリアルに統合。描画コールとGPUテクスチャを大幅削減。商品名は照準/HUDで表示する。 */
 const prodMats=CATS.map(c=>new THREE.MeshLambertMaterial({color:c.col}));
 /* 近距離だけ使う商品別パッケージ画像。遠距離はカテゴリ共通マテリアルのまま。 */
+/* 実画像アトラス。12種類の透明背景アイコンを必要な時だけテクスチャ化する。 */
+const PRODUCT_ATLAS_URL="./assets/product-icons.svg?v=20261127-2120";
+const productAtlasImage=new Image();
+let productAtlasReady=false;
 const detailProductMaterials=new Map();
-function detailProductMaterial(t){
- if(detailProductMaterials.has(t))return detailProductMaterials.get(t);
- const p=PRODUCTS[t],cv=document.createElement("canvas");cv.width=96;cv.height=96;
- const g=cv.getContext("2d"),base="#"+p.col.toString(16).padStart(6,"0");
- g.fillStyle=base;g.fillRect(0,0,96,96);
- g.fillStyle="rgba(255,255,255,.94)";g.fillRect(5,5,86,86);
- g.fillStyle=base;g.fillRect(5,5,86,17);
- g.fillStyle="#fff";g.font="bold 9px sans-serif";g.textAlign="center";g.textBaseline="middle";
- g.fillText(CATS[p.c].n,48,13);
- g.strokeStyle="rgba(25,35,45,.32)";g.lineWidth=2;g.strokeRect(6,23,84,66);
- if(p.c===0){
-  /* 洗剤・シャンプーなどの日用品パッケージ */
-  g.fillStyle=base;g.fillRect(36,37,24,34);g.fillRect(42,30,12,9);
-  g.fillStyle="rgba(255,255,255,.8)";g.fillRect(39,44,18,15);
-  g.fillStyle="#273746";g.font="bold 7px sans-serif";g.fillText("CLEAN",48,63);
- }else if(p.c===2){
-  /* アイスバー／カップのイメージ */
-  g.fillStyle="#e9a66b";g.fillRect(45,43,6,28);
-  g.fillStyle=base;g.beginPath();g.roundRect(35,29,26,31,10);g.fill();
-  g.fillStyle="rgba(255,255,255,.7)";g.beginPath();g.arc(43,39,5,0,Math.PI*2);g.fill();
- }else if(p.c===3){
-  /* 本の表紙と背表紙 */
-  g.fillStyle=base;g.fillRect(28,29,40,42);
-  g.fillStyle="#243748";g.fillRect(28,29,7,42);
-  g.fillStyle="rgba(255,255,255,.8)";g.fillRect(39,37,23,3);g.fillRect(39,44,20,2);
-  g.fillStyle="#243748";g.fillRect(39,55,23,2);
+function productIconCell(t){
+ const p=PRODUCTS[t],n=((t%10)+10)%10;
+ if(p.c===0)return [0,1,3,2,2,3,0,2,1,3][n];       // 日用品
+ if(p.c===2)return [4,4,5,7,7,6,4,7,5,7][n];       // アイス
+ if(p.c===3)return [8,11,10,8,9,10,11,8,10,9][n];  // 書籍
+ return -1;
+}
+function detailProductMaterial(sprite){
+ if(detailProductMaterials.has(sprite))return detailProductMaterials.get(sprite);
+ const cv=document.createElement("canvas");cv.width=128;cv.height=128;
+ const g=cv.getContext("2d");
+ if(productAtlasReady){
+  const col=sprite%4,row=Math.floor(sprite/4);
+  g.drawImage(productAtlasImage,col*128,row*128,128,128,0,0,128,128);
  }else{
-  g.fillStyle=base;g.fillRect(27,31,42,39);
-  g.fillStyle="rgba(255,255,255,.8)";g.fillRect(32,38,32,12);
-  g.fillStyle="#243748";g.fillRect(36,56,24,3);
+  g.fillStyle="#26394a";g.fillRect(0,0,128,128);
+  g.fillStyle="#8ed9ff";g.font="bold 12px sans-serif";g.textAlign="center";
+  g.fillText("読み込み中",64,68);
  }
- g.fillStyle="#17212b";g.font="bold 8px sans-serif";g.textAlign="center";
- const name=p.n.length>9?p.n.slice(0,9):p.n;g.fillText(name,48,81);
  const tex=new THREE.CanvasTexture(cv);tex.generateMipmaps=false;
  tex.minFilter=THREE.LinearFilter;tex.magFilter=THREE.LinearFilter;
- const mat=new THREE.MeshLambertMaterial({map:tex,color:0xffffff});
- detailProductMaterials.set(t,mat);return mat;
+ const mat=new THREE.MeshBasicMaterial({map:tex,transparent:true,alphaTest:0.04,side:THREE.DoubleSide,depthWrite:false,toneMapped:false});
+ detailProductMaterials.set(sprite,mat);return mat;
 }
+productAtlasImage.onload=()=>{
+ productAtlasReady=true;
+ detailProductMaterials.clear();
+ for(const [sprite,mesh] of nearbyDetailMeshes){
+  mesh.material=detailProductMaterial(sprite);
+ }
+ if(typeof refreshNearbyDetails==="function")refreshNearbyDetails(true);
+ console.info("[CM3D] real product icon atlas loaded");
+};
+productAtlasImage.onerror=()=>console.error("[CM3D] product icon atlas failed:",PRODUCT_ATLAS_URL);
+productAtlasImage.src=PRODUCT_ATLAS_URL;
 const rareGeo={register:boxGeo(0.5,0.45,0.45),cart:boxGeo(0.5,0.42,0.6),sign:boxGeo(0.7,0.5,0.1),case:boxGeo(0.45,0.5,0.35)};
 
 /* ---------- 棚(ゴンドラ)定義 ---------- */
@@ -586,13 +588,19 @@ function updateChunkVisibility(force=false){
 }
 const zeroM=new THREE.Matrix4().makeScale(0,0,0);
 const detailRestoreM=new THREE.Matrix4();
-const nearbyDetailMeshes=new Map();
-const nearbyDetailSlots=new Map();
+const nearbyDetailMeshes=new Map();   // sprite cell -> InstancedMesh
+const nearbyDetailSlots=new Map();    // item idx -> {mesh,slot}
 let nearbyDetailedItems=[],lastNearbyDetailAt=0;
+const detailPlaneGeometry=new THREE.PlaneGeometry(0.74,0.74);
+const detailUpAxis=new THREE.Vector3(0,1,0);
+const detailBillboardQuaternion=new THREE.Quaternion();
+const detailBillboardScale=new THREE.Vector3(1,1,1);
+const detailBillboardPosition=new THREE.Vector3();
 function nearestItemsInRadius(x,z,r,maxN){
  const out=[],r2=r*r;
  for(const arr of cellsAround(x,z,r))for(const it of arr){
   if(state[it.idx]||!it.im||!it.im.parent.visible||it.mi>=it.im.count)continue;
+  if(productIconCell(it.t)<0)continue;
   const dx=it.x-x,dz=it.z-z,d=dx*dx+dz*dz;
   if(d<r2)out.push({it,d});
  }
@@ -601,41 +609,51 @@ function nearestItemsInRadius(x,z,r,maxN){
 }
 function refreshNearbyDetails(force=false){
  const now=performance.now();
- if(!force&&now-lastNearbyDetailAt<420)return;
+ if(!force&&now-lastNearbyDetailAt<300)return;
  lastNearbyDetailAt=now;
- /* 直前まで詳細表示していた商品の簡易表示を元に戻す */
+ /* 詳細表示を外れた商品は、遠距離用の簡易モデルへ戻す */
  for(const it of nearbyDetailedItems){
-  /* 非表示LOD中に距離が離れても、元の簡易メッシュ座標は必ず復元する */
   if(state[it.idx]||!it.im||it.mi>=it.im.userData.cmFullCount)continue;
   detailRestoreM.makeTranslation(pos[it.idx*3],pos[it.idx*3+1],pos[it.idx*3+2]);
-  it.im.setMatrixAt(it.mi,detailRestoreM);it.im.instanceMatrix.needsUpdate=true;
+  it.im.setMatrixAt(it.mi,detailRestoreM);
+  it.im.instanceMatrix.needsUpdate=true;
  }
  nearbyDetailedItems=[];
  nearbyDetailSlots.clear();
  for(const mesh of nearbyDetailMeshes.values())mesh.count=0;
- /* 本当に近い商品だけを距離順で最大64個、商品別画像付きで描く */
- const closeItems=nearestItemsInRadius(player.x,player.z,8.5,64),byType=new Map();
+ /* 8.5m以内の最も近い64個だけ、実画像のアイコンをカメラ向きカードで描画 */
+ const closeItems=nearestItemsInRadius(player.x,player.z,8.5,64),bySprite=new Map();
  for(const it of closeItems){
-  let group=byType.get(it.t);if(!group){group=[];byType.set(it.t,group)}
+  const sprite=productIconCell(it.t);
+  let group=bySprite.get(sprite);
+  if(!group){group=[];bySprite.set(sprite,group)}
   group.push(it);
  }
- for(const [t,list] of byType){
-  let mesh=nearbyDetailMeshes.get(t);
+ detailBillboardQuaternion.setFromAxisAngle(detailUpAxis,player.yaw);
+ for(const [sprite,list] of bySprite){
+  let mesh=nearbyDetailMeshes.get(sprite);
   if(!mesh){
-   mesh=new THREE.InstancedMesh(SHAPES[PRODUCTS[t].s],detailProductMaterial(t),64);
-   mesh.count=0;mesh.frustumCulled=false;mesh.renderOrder=2;
-   scene.add(mesh);nearbyDetailMeshes.set(t,mesh);
+   mesh=new THREE.InstancedMesh(detailPlaneGeometry,detailProductMaterial(sprite),64);
+   mesh.count=0;mesh.frustumCulled=false;mesh.renderOrder=4;
+   scene.add(mesh);nearbyDetailMeshes.set(sprite,mesh);
   }
-  const detailMatrix=new THREE.Matrix4();
   for(let i=0;i<list.length;i++){
    const it=list[i],idx=it.idx;
-   detailMatrix.makeTranslation(pos[idx*3],pos[idx*3+1],pos[idx*3+2]);
+   /* 画像カードを商品本体の少し手前・上に配置し、常にプレイヤー側へ向ける */
+   detailBillboardPosition.set(
+    it.x+Math.sin(player.yaw)*0.24,
+    pos[idx*3+1]+0.28,
+    it.z+Math.cos(player.yaw)*0.24
+   );
+   detailMatrix.compose(detailBillboardPosition,detailBillboardQuaternion,detailBillboardScale);
    mesh.setMatrixAt(i,detailMatrix);
-   it.im.setMatrixAt(it.mi,zeroM);it.im.instanceMatrix.needsUpdate=true;
+   it.im.setMatrixAt(it.mi,zeroM);
+   it.im.instanceMatrix.needsUpdate=true;
    nearbyDetailSlots.set(idx,{mesh,slot:i});
    nearbyDetailedItems.push(it);
   }
-  mesh.count=list.length;mesh.instanceMatrix.needsUpdate=true;
+  mesh.count=list.length;
+  mesh.instanceMatrix.needsUpdate=true;
  }
 }
 function takeInstance(t,idx,toState){
