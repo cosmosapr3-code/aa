@@ -18,7 +18,7 @@ html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#14161c;fon
 #c{position:fixed;inset:0;display:block;width:100%;height:100%;z-index:0;background:#8da5b5}
 #hud{position:fixed;left:8px;top:8px;right:180px;pointer-events:none;font:700 13px system-ui;color:#fff;text-shadow:0 1px 3px #000;z-index:5;line-height:1.5}
 #prompt{position:fixed;left:50%;top:56%;transform:translateX(-50%);pointer-events:none;font:700 16px system-ui;color:#ffe14a;text-shadow:0 2px 4px #000;z-index:5}
-#tut{position:fixed;left:50%;top:62%;transform:translateX(-50%);pointer-events:none;font:700 15px system-ui;color:#7fe0ff;background:#101820cc;padding:8px 14px;border-radius:10px;z-index:5;max-width:88vw;text-align:center}#tutSkip{position:fixed;left:50%;top:calc(62% + 48px);transform:translateX(-50%);display:none;pointer-events:auto;z-index:8;padding:7px 12px;border:1px solid #80d8ff;border-radius:8px;background:#152c3bef;color:#fff;font-weight:700}#inventory{position:fixed;left:50%;bottom:14px;transform:translateX(-50%);z-index:6;display:none;max-width:92vw;min-width:min(320px,92vw);box-sizing:border-box;padding:8px 12px;border:1px solid #82b9d9;border-radius:12px;background:#111d2bef;color:#fff;text-align:center;text-shadow:0 1px 2px #000;font:600 12px/1.5 system-ui;pointer-events:none}#inventory .inv-items{display:flex;justify-content:center;gap:6px;flex-wrap:wrap;margin-top:4px}#inventory .inv-item{padding:4px 8px;border:1px solid #7f9bb0;border-radius:7px;background:#263b50;color:#fff}#inventory .inv-empty{color:#c8d5df}
+#tut{position:fixed;left:50%;top:auto;bottom:116px;transform:translateX(-50%);pointer-events:none;font:600 14px/1.55 system-ui;color:#edf8ff;background:rgba(9,20,32,.94);border:1px solid #74bde8;border-radius:13px;box-shadow:0 5px 24px #0008;padding:13px 16px;z-index:7;width:min(520px,90vw);box-sizing:border-box;text-align:left}#tut .tut-progress{font-size:11px;color:#90c8ed;font-weight:800;letter-spacing:.04em}#tut .tut-title{font-size:17px;font-weight:900;color:#ffe28a;margin:2px 0 5px}#tut .tut-body{font-size:13px;color:#eef5fa}#tut .tut-key{display:inline-block;margin-top:8px;padding:5px 9px;border-radius:7px;background:#194b70;color:#fff;font-weight:800;font-size:12px}#tut .tut-meter{height:5px;background:#344555;border-radius:9px;overflow:hidden;margin-top:10px}#tut .tut-meter span{display:block;height:100%;background:#62c4ff}#tutSkip{position:fixed;right:12px;bottom:116px;transform:none;display:none;pointer-events:auto;z-index:8;padding:7px 10px;border:1px solid #80d8ff;border-radius:8px;background:#152c3bef;color:#fff;font-weight:700}#inventory{position:fixed;left:50%;bottom:14px;transform:translateX(-50%);z-index:6;display:none;max-width:92vw;min-width:min(320px,92vw);box-sizing:border-box;padding:8px 12px;border:1px solid #82b9d9;border-radius:12px;background:#111d2bef;color:#fff;text-align:center;text-shadow:0 1px 2px #000;font:600 12px/1.5 system-ui;pointer-events:none}#inventory .inv-items{display:flex;justify-content:center;gap:6px;flex-wrap:wrap;margin-top:4px}#inventory .inv-item{padding:4px 8px;border:1px solid #7f9bb0;border-radius:7px;background:#263b50;color:#fff}#inventory .inv-empty{color:#c8d5df}
 #toast{position:fixed;left:50%;top:12%;transform:translateX(-50%);pointer-events:none;font:700 16px system-ui;color:#fff;text-shadow:0 2px 4px #000;z-index:9;opacity:0;transition:opacity .4s;text-align:center;max-width:80%}
 #minimap{position:fixed;right:8px;top:8px;width:168px;height:101px;border:2px solid #2a5fd0;border-radius:8px;z-index:5}
 #panel{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);width:min(720px,94vw);max-height:82vh;overflow:auto;display:none;background:#2a2018f2;border:3px solid #8a6a30;border-radius:14px;padding:14px;z-index:10;color:#f0e6d0}
@@ -270,7 +270,7 @@ try{
  document.body.innerHTML='<div style="position:fixed;inset:0;display:grid;place-items:center;background:#18202a;color:#fff;padding:24px;font:16px/1.7 system-ui"><div style="max-width:720px;background:#302020;border:2px solid #ff8a70;border-radius:14px;padding:22px"><h2>3D画面を起動できません</h2><p>このブラウザーでWebGLを初期化できませんでした。</p><pre style="white-space:pre-wrap;overflow-wrap:anywhere">'+String(msg).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c]))+'</pre><p>Edgeの設定でハードウェアクセラレーションを有効にし、ブラウザーを再起動してください。</p></div></div>';
  throw webglError;
 }
-renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,1));
+renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,0.85));
 renderer.shadowMap.enabled=false;
 canvas.addEventListener("webglcontextlost",event=>{
  event.preventDefault();
@@ -347,41 +347,8 @@ const SHAPES=[
 ];
 const HGT=[0.30,0.34,0.34,0.24,0.16,0.34,0.36,0.22,0.34,0.18,0.34,0.12,0.30,0.30,0.24,0.33,0.19,0.30];
 /* 商品名を印刷した軽量ラベルテクスチャ。画像素材を大量ロードせず、100種を識別可能にする。 */
-function makeProductTexture(p){
- const cv=document.createElement("canvas");cv.width=128;cv.height=128;
- const g=cv.getContext("2d");
- const base="#"+p.col.toString(16).padStart(6,"0");
- g.fillStyle=base;g.fillRect(0,0,128,128);
- g.fillStyle="rgba(255,255,255,.88)";g.fillRect(6,22,116,94);
- g.fillStyle="rgba(255,255,255,.24)";g.fillRect(0,0,128,16);
- g.fillStyle="#203040";g.font="bold 10px sans-serif";g.textAlign="center";
- g.fillText(CATS[p.c].n,64,12);
- g.strokeStyle="rgba(30,45,55,.22)";g.lineWidth=2;g.strokeRect(7,23,114,92);
- if(p.c===3){
-  g.fillStyle=base;g.fillRect(14,30,12,78);g.fillStyle="#26313a";g.fillRect(28,30,2,78);
-  g.fillStyle="#26313a";g.font="bold 13px sans-serif";g.textAlign="left";
-  g.fillText("BOOK",38,43);
- }else if(p.c===2){
-  g.fillStyle="rgba(255,255,255,.92)";g.beginPath();g.arc(64,58,23,0,Math.PI*2);g.fill();
-  g.fillStyle=base;g.beginPath();g.arc(64,58,16,0,Math.PI*2);g.fill();
- }else if(p.c===0){
-  g.fillStyle="rgba(255,255,255,.9)";g.fillRect(44,31,40,35);
-  g.fillStyle=base;g.fillRect(54,25,20,9);
-  g.fillStyle="rgba(255,255,255,.7)";g.fillRect(48,38,32,22);
- }else{
-  g.fillStyle=base;g.beginPath();g.arc(64,58,20,0,Math.PI*2);g.fill();
-  g.fillStyle="rgba(255,255,255,.55)";g.beginPath();g.arc(57,51,8,0,Math.PI*2);g.fill();
- }
- g.fillStyle="#17212b";g.textAlign="center";
- let size=15;g.font="bold "+size+"px sans-serif";
- while(g.measureText(p.n).width>108&&size>9){size--;g.font="bold "+size+"px sans-serif"}
- const words=p.n.length>8?[p.n.slice(0,Math.ceil(p.n.length/2)),p.n.slice(Math.ceil(p.n.length/2))]:[p.n];
- g.fillText(words[0],64,91);
- if(words[1])g.fillText(words[1],64,106);
- const tex=new THREE.CanvasTexture(cv);tex.generateMipmaps=true;tex.minFilter=THREE.LinearMipmapLinearFilter;
- return tex;
-}
-const prodMats=PRODUCTS.map(p=>new THREE.MeshLambertMaterial({color:0xffffff,map:makeProductTexture(p)}));
+/* 100種類を10カテゴリの共有マテリアルに統合。描画コールとGPUテクスチャを大幅削減。商品名は照準/HUDで表示する。 */
+const prodMats=CATS.map(c=>new THREE.MeshLambertMaterial({color:c.col}));
 const rareGeo={register:boxGeo(0.5,0.45,0.45),cart:boxGeo(0.5,0.42,0.6),sign:boxGeo(0.7,0.5,0.1),case:boxGeo(0.45,0.5,0.35)};
 
 /* ---------- 棚(ゴンドラ)定義 ---------- */
@@ -473,8 +440,10 @@ function buildShelf(sh,parent){
  parent.add(gg);sh.mesh=gg;
  /* 棚の衝突ボックス(回転0/90のみ) */
  const c=Math.abs(Math.cos(sh.rot))>0.5;
- sh.bbox=c?{x0:sh.x-L/2,x1:sh.x+L/2,z0:sh.z-Dep/2,z1:sh.z+Dep/2}:{x0:sh.x-Dep/2,x1:sh.x+Dep/2,z0:sh.z-L/2,z1:sh.z+L/2};
- sh.frontZ=c?sh.z+Dep/2+0.4:sh.z;sh.frontX=c?sh.x:sh.x+Dep/2+0.4;
+ sh.bbox=c?{x0:sh.x-L/2-0.12,x1:sh.x+L/2+0.12,z0:sh.z-Dep/2-0.18,z1:sh.z+Dep/2+0.18}:{x0:sh.x-Dep/2-0.18,x1:sh.x+Dep/2+0.18,z0:sh.z-L/2-0.12,z1:sh.z+L/2+0.12};
+ /* 棚の正面はローカル+Z方向。回転に合わせて世界座標へ変換する。 */
+ sh.frontX=sh.x+Math.sin(sh.rot)*(Dep/2+1.0);
+ sh.frontZ=sh.z+Math.cos(sh.rot)*(Dep/2+1.0);
  /* 初期在庫:入れるべき商品を1〜2個棚に置く */
  const pool=PRODUCTS.map((p,i)=>i).filter(i=>PRODUCTS[i].c===sh.cat);
  const n0=1+Math.floor(rng()*2);
@@ -539,15 +508,22 @@ function placeAll(){
   const info={group:new THREE.Group(),meshes:[],x0:-50+cx*CKX,x1:-50+(cx+1)*CKX,z0:-30+cz*CKZ,z1:-30+(cz+1)*CKZ};
   info.group.name="item-chunk-"+ck;scene.add(info.group);chunkRenderInfo.set(ck,info);
   for(let i=0;i<arr.length;i++){const it=arr[i];it.ck=ck;it.si=i;itemByIdx[it.idx]=it;const gk=ckOfCell(it.x,it.z);let ga=cellGrid.get(gk);if(!ga){ga=[];cellGrid.set(gk,ga)}ga.push(it)}
-  const byType=new Map();
-  for(const it of arr){let l=byType.get(it.t);if(!l){l=[];byType.set(it.t,l)}l.push(it)}
-  for(const [t,list] of byType){
-   const im=new THREE.InstancedMesh(SHAPES[PRODUCTS[t].s],prodMats[t],list.length);
+  /* 同じ形状・カテゴリ色の商品は1つのInstancedMeshにまとめる。 */
+  const renderGroups=new Map();
+  for(const it of arr){
+   const product=PRODUCTS[it.t],key=product.s+"_"+product.c;
+   let group=renderGroups.get(key);
+   if(!group){group={shape:product.s,category:product.c,items:[]};renderGroups.set(key,group)}
+   group.items.push(it);
+  }
+  for(const group of renderGroups.values()){
+   const list=group.items;
+   const im=new THREE.InstancedMesh(SHAPES[group.shape],prodMats[group.category],list.length);
    for(let i=0;i<list.length;i++){const it=list[i];it.mi=i;it.im=im;m4.makeTranslation(pos[it.idx*3],pos[it.idx*3+1],pos[it.idx*3+2]);im.setMatrixAt(i,m4)}
    im.instanceMatrix.needsUpdate=true;
    im.frustumCulled=false;
    im.userData.cmFullCount=list.length;
-   info.group.add(im);info.meshes.push(im);chunkMesh.set(ck+"_"+t,im);
+   info.group.add(im);info.meshes.push(im);chunkMesh.set(ck+"_"+group.shape+"_"+group.category,im);
   }
  }
  updateChunkVisibility(true);
@@ -560,7 +536,7 @@ function updateChunkVisibility(force=false){
  for(const info of chunkRenderInfo.values()){
   const dx=Math.max(info.x0-player.x,0,player.x-info.x1),dz=Math.max(info.z0-player.z,0,player.z-info.z1);
   const distance=Math.hypot(dx,dz);
-  const ratio=distance<20?1:(distance<38?0.38:0);
+  const ratio=distance<14?1:(distance<27?0.10:0);
   info.group.visible=ratio>0;
   for(const mesh of info.meshes){
    const count=ratio===1?mesh.userData.cmFullCount:(ratio>0?Math.max(1,Math.floor(mesh.userData.cmFullCount*ratio)):0);
@@ -587,7 +563,7 @@ function cellsAround(x,z,r){
 function nearestItem(x,z,r){
  let best=null,bd=r*r;
  for(const arr of cellsAround(x,z,r))for(const it of arr){
-  if(state[it.idx])continue;
+  if(state[it.idx]||(it.im&&(!it.im.parent.visible||it.mi>=it.im.count)))continue;
   const d=(it.x-x)*(it.x-x)+(it.z-z)*(it.z-z);
   if(d<bd){bd=d;best=it}
  }
@@ -596,7 +572,7 @@ function nearestItem(x,z,r){
 function itemsInRadius(x,z,r,maxN){
  const out=[],r2=r*r;
  for(const arr of cellsAround(x,z,r))for(const it of arr){
-  if(state[it.idx])continue;
+  if(state[it.idx]||(it.im&&(!it.im.parent.visible||it.mi>=it.im.count)))continue;
   const d=(it.x-x)*(it.x-x)+(it.z-z)*(it.z-z);
   if(d<r2){out.push(it);if(out.length>=maxN)return out}
  }
@@ -623,10 +599,24 @@ const player={x:-1,z:24.5,feet:0,vy:0,yaw:0,pitch:-0.22};
 const PR=0.35;
 const collide=(x,z)=>{
  if(x<ROOM.x0+0.6||x>ROOM.x1-0.6||z<ROOM.z0+0.6||z>ROOM.z1-0.6)return true;
-
- for(const b of shelfBBoxes)if(x>b.x0-PR&&x<b.x1+PR&&z>b.z0-PR&&z<b.z1+PR)return true;
+ /* 棚の矩形に対する円形プレイヤー衝突。角からもすり抜けない。 */
+ const r=PR+0.12,r2=r*r;
+ for(const b of shelfBBoxes){
+  const qx=clamp(x,b.x0,b.x1),qz=clamp(z,b.z0,b.z1);
+  const dx=x-qx,dz=z-qz;
+  if(dx*dx+dz*dz<r2)return true;
+ }
  return false;
 };
+function movePlayer(dx,dz){
+ /* 速く移動しても1フレームで棚を飛び越えないよう細かく分割する。 */
+ const steps=Math.max(1,Math.ceil(Math.max(Math.abs(dx),Math.abs(dz))/0.12));
+ const sx=dx/steps,sz=dz/steps;
+ for(let i=0;i<steps;i++){
+  if(!collide(player.x+sx,player.z))player.x+=sx;
+  if(!collide(player.x,player.z+sz))player.z+=sz;
+ }
+}
 const keys={};
 addEventListener("keydown",e=>{keys[e.code]=true;
  if(e.code==="KeyE")interact();
@@ -667,18 +657,26 @@ const heldMesh=new THREE.Mesh(SHAPES[0],prodMats[0]);heldMesh.visible=false;hand
 const carry=[];
 const drops=[]; /* 落とした物(永続) */
 const dropMeshPool=[];
-function dropMesh(t){return new THREE.Mesh(SHAPES[PRODUCTS[t].s],prodMats[t])}
+function dropMesh(t){return new THREE.Mesh(SHAPES[PRODUCTS[t].s],prodMats[PRODUCTS[t].c])}
 function syncHeld(){
  if(!carry.length){heldMesh.visible=false;return}
  const t=carry[carry.length-1].t;
- heldMesh.geometry=SHAPES[PRODUCTS[t].s];heldMesh.material=prodMats[t];
+ heldMesh.geometry=SHAPES[PRODUCTS[t].s];heldMesh.material=prodMats[PRODUCTS[t].c];
  heldMesh.visible=true;heldMesh.position.set(0.32,-0.28,-0.7);heldMesh.rotation.set(0.3,0.5,0);
 }
 function dropTop(){
  if(!carry.length){toast("持っている物がない");return}
+ const fx=-Math.sin(player.yaw),fz=-Math.cos(player.yaw),sx=Math.cos(player.yaw),sz=-Math.sin(player.yaw);
+ const candidates=[[1.0,0],[1.5,0],[0.9,0.8],[0.9,-0.8],[1.8,0.7],[1.8,-0.7],[-0.8,0]];
+ let spot=null;
+ for(const [forward,side] of candidates){
+  const x=player.x+fx*forward+sx*side,z=player.z+fz*forward+sz*side;
+  if(!collide(x,z)){spot={x,z};break}
+ }
+ if(!spot){toast("棚から少し離れてからGキーで置いてください");return}
  const c=carry.pop();
- const m=dropMesh(c.t);m.position.set(player.x-Math.sin(player.yaw)*0.8,0.2,player.z-Math.cos(player.yaw)*0.8);
- scene.add(m);drops.push({t:c.t,x:m.position.x,z:m.position.z,mesh:m});
+ const m=dropMesh(c.t);m.position.set(spot.x,0.2,spot.z);
+ scene.add(m);drops.push({t:c.t,x:spot.x,z:spot.z,mesh:m});
  if(drops.length>20+L("ware")*30){const old=drops.shift();if(old.mesh)scene.remove(old.mesh)}
  sfx([300,220]);toast("置きました");
  syncHeld();saveDirty=true;
@@ -711,7 +709,28 @@ function pickupPathClear(x,y,z){
 function itemPathClear(it){
  return pickupPathClear(it.x,Math.max(0.08,pos[it.idx*3+1]),it.z);
 }
+function shelfAccessTarget(){
+ if(!carry.length)return null;
+ const fx=-Math.sin(player.yaw),fz=-Math.cos(player.yaw);
+ let best=null,bestScore=Infinity;
+ for(const sh of shelves){
+  const nx=Math.sin(sh.rot),nz=Math.cos(sh.rot);
+  const lx=Math.cos(sh.rot),lz=-Math.sin(sh.rot);
+  const rx=player.x-sh.x,rz=player.z-sh.z;
+  const front=rx*nx+rz*nz,lateral=rx*lx+rz*lz;
+  if(front<0.62||front>3.6||Math.abs(lateral)>4.8)continue;
+  const facing=-(fx*nx+fz*nz);
+  if(facing<0.25)continue;
+  const matches=carry.some(c=>PRODUCTS[c.t].c===sh.cat);
+  const score=Math.hypot(front-1.05,lateral)+(matches?0:5);
+  if(score<bestScore){bestScore=score;best={kind:"shelf",sh,canStore:matches};}
+ }
+ return best;
+}
 function aimTarget(){
+ /* 持ち物がある時は、正面から操作できる棚を優先する。 */
+ const shelfTarget=shelfAccessTarget();
+ if(shelfTarget)return shelfTarget;
  /* 視線上の候補を調べ、棚・壁・カウンターの裏なら拾えない */
  const dx=-Math.sin(player.yaw)*Math.cos(player.pitch),dz=-Math.cos(player.yaw)*Math.cos(player.pitch);
  const bd=magnet()+3;
@@ -753,7 +772,7 @@ function interact(){
    const t=carry[i].t;
    if(PRODUCTS[t].c===sh.cat||rareCarried(i)){storeOne(t,sh);carry.splice(i,1);n++}
   }
-  if(n){sfx([700,520,380]);comboT=3}else toast(CATS[sh.cat].n+"の商品を持ってこよう");
+  if(n){sfx([700,520,380]);comboT=3;toast(n+"個を"+sh.name+"へ収納しました!")}else{const holding=[...new Set(carry.map(c=>CATS[PRODUCTS[c.t].c].n))].join("・")||"なし";toast("ここは"+CATS[sh.cat].n+"棚です。持ち物("+holding+")に合う棚へ運んでください")}
   syncHeld();saveDirty=true;updateShelfDisp(sh);
  }else if(a.kind==="gacha"){
   if(S.tickets<1){toast("ガチャ券が足りない");return}
@@ -962,7 +981,7 @@ const MUSIC_API="https://api.github.com/repos/cosmosapr3-code/aa/contents/music?
 /* 無料の店内環境音楽はWebAudioで合成。追加曲だけをmusic/から読み込む。 */
 const MUSIC_FALLBACK={name:"shop_ambient.ogg",builtin:true,free:true};
 let musicCatalogPromise=null,musicTracks=[],currentTrackName="";
-const bgmAudio=new Audio();bgmAudio.loop=true;bgmAudio.preload="none";bgmAudio.volume=0.32;
+const bgmAudio=new Audio();bgmAudio.loop=true;bgmAudio.preload="none";bgmAudio.volume=0.62;
 let ambientContext=null,ambientMaster=null,ambientTimer=null,ambientActive=false;
 function escapeMusicText(v){return String(v).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
 async function getMusicCatalog(refresh=false){
@@ -1015,7 +1034,7 @@ async function playBuiltInAmbient(){
   ambientContext=ambientContext||new AC();
   if(ambientContext.state==="suspended")await ambientContext.resume();
   ambientMaster=ambientContext.createGain();
-  ambientMaster.gain.value=bgmAudio.volume*0.42;
+  ambientMaster.gain.value=bgmAudio.volume*0.9;
   ambientMaster.connect(ambientContext.destination);
   ambientActive=true;currentTrackName=MUSIC_FALLBACK.name;S.activeMusic=MUSIC_FALLBACK.name;
   const chords=[
@@ -1028,8 +1047,8 @@ async function playBuiltInAmbient(){
   const schedule=()=>{
    if(!ambientActive||!ambientContext||!ambientMaster)return;
    const base=ambientContext.currentTime+0.12;
-   chords.forEach((chord,bar)=>chord.forEach((hz,index)=>ambientNote(hz,base+bar*4,4.35,0.0065,index===0?"sine":"triangle")));
-   melody.forEach((hz,index)=>ambientNote(hz,base+index*2,1.85,0.0024,"sine"));
+   chords.forEach((chord,bar)=>chord.forEach((hz,index)=>ambientNote(hz,base+bar*4,4.35,0.013,index===0?"sine":"triangle")));
+   melody.forEach((hz,index)=>ambientNote(hz,base+index*2,1.85,0.006,"sine"));
    ambientTimer=setTimeout(schedule,15800);
   };
   schedule();saveDirty=true;
@@ -1054,7 +1073,7 @@ function renderMusic(p,refresh=false){
  p.innerHTML="<div style='line-height:1.7'><b>店内BGM</b><p>穏やかな店内BGMは無料。music/ に追加した曲は1曲500コインで購入できます。</p><div id='musicStatus'>曲一覧を読み込み中...</div><p><label>音量 <input id='bgmVol' type='range' min='0' max='1' step='0.05' value='"+bgmAudio.volume+"'></label></p><button id='musicRefresh' style='padding:7px 12px;border-radius:8px'>曲一覧を更新</button><p style='font-size:12px;color:#c8b890'>GitHubの music/ フォルダに mp3 / ogg / wav を入れ、「曲一覧を更新」を押すと追加曲が表示されます。</p></div>";
  const vol=$("bgmVol");vol.addEventListener("input",()=>{
   bgmAudio.volume=Number(vol.value);
-  if(ambientMaster)ambientMaster.gain.setTargetAtTime(bgmAudio.volume*0.42,ambientContext.currentTime,0.08);
+  if(ambientMaster)ambientMaster.gain.setTargetAtTime(bgmAudio.volume*0.9,ambientContext.currentTime,0.08);
  });
  $("musicRefresh").addEventListener("click",()=>renderMusic(p,true));
  getMusicCatalog(refresh).then(tracks=>{
@@ -1220,8 +1239,12 @@ $("btnMusic").addEventListener("click",()=>openPanel("music"));
 $("btnSettings").addEventListener("click",()=>openPanel("settings"));
 
 /* ---------- チュートリアル ---------- */
-const TUT=["WASD/矢印で自由に店内を移動しよう","近くの商品に近づいてEで拾う(Gで置き直しもできる)","持った商品と同じカテゴリの棚でEを押して収納!","スキル画面を開いて完了!"];
-let tutStep=0;
+const TUT=[
+ {title:"① 商品の近くまで移動",body:"W・A・S・D または矢印キーで、目の前の光る商品に近づきます。",key:"移動：W A S D"},
+ {title:"② 商品を拾う",body:"光る商品を画面中央に合わせて E キー。商品名と持ち物欄に追加されたか確認します。",key:"拾う：E"},
+ {title:"③ 同じ種類の青い棚へ",body:"持っている商品のカテゴリと同じ棚の正面へ行き、棚の案内が出たら E キーで収納します。",key:"収納：棚の正面で E"}
+];
+let tutStep=0,tutorialCarryBase=0,tutorialStoredBase=0;
 const tutorialStart={x:player.x,z:player.z};
 $("tutSkip").addEventListener("click",()=>{
  S.tutorialDone=true;saveDirty=true;$("tut").style.display="none";$("tutSkip").style.display="none";
@@ -1229,16 +1252,23 @@ $("tutSkip").addEventListener("click",()=>{
 });
 function updateTut(){
  if(S.tutorialDone){$("tut").style.display="none";$("tutSkip").style.display="none";return}
- /* 最初の移動ステップは開始位置から1m以上動けば必ず完了 */
- if(tutStep===0&&Math.hypot(player.x-tutorialStart.x,player.z-tutorialStart.z)>=1){tutStep=1;toast("移動できました! 次は商品に近づいてEで拾おう")}
- if(tutStep<=1&&carry.length)tutStep=2;
- if(tutStep<=2&&S.stored>0)tutStep=3;
- $("tut").style.display="block";$("tutSkip").style.display="block";
- $("tut").textContent="チュートリアル "+(tutStep+1)+"/4: "+TUT[Math.min(tutStep,3)];
- if(tutStep>=3&&mode==="skill"){
-  S.tutorialDone=true;toast("チュートリアル完了!店内を自由に探索しよう!");saveDirty=true;
-  $("tut").style.display="none";$("tutSkip").style.display="none";
+ if(tutStep===0&&Math.hypot(player.x-tutorialStart.x,player.z-tutorialStart.z)>=0.8){
+  tutStep=1;toast("移動できました。次は光る商品をEで拾いましょう");
  }
+ if(tutStep===1&&carry.length>tutorialCarryBase){
+  tutStep=2;toast("商品を持ちました。同じカテゴリの棚の正面へ進みましょう");
+ }
+ if(tutStep===2&&S.stored>tutorialStoredBase){
+  S.tutorialDone=true;saveDirty=true;
+  $("tut").style.display="none";$("tutSkip").style.display="none";
+  toast("チュートリアル完了! 店内を自由に探索できます");
+  return;
+ }
+ const task=TUT[tutStep];
+ const cats=[...new Set(carry.slice(tutorialCarryBase).map(c=>CATS[PRODUCTS[c.t].c].n))];
+ const shelfHint=tutStep===2?(cats.length?cats.join("・")+"棚の正面へ":"同じカテゴリの棚の正面へ"):"";
+ $("tut").style.display="block";$("tutSkip").style.display="block";
+ $("tut").innerHTML="<div class='tut-progress'>チュートリアル "+(tutStep+1)+"/3</div><div class='tut-title'>"+task.title+"</div><div class='tut-body'>"+task.body+"</div><div class='tut-key'>"+(shelfHint||task.key)+"</div><div class='tut-meter'><span style='width:"+Math.round(tutStep/3*100)+"%'></span></div>";
 }
 /* チュートリアル用商品(境界内に3個置く) */
 const tutItems=[];
@@ -1291,7 +1321,7 @@ setInterval(()=>{if(saveDirty)cloudSave()},60000);
 
 /* ---------- メインループ ---------- */
 const v3=new THREE.Vector3();
-let last=performance.now(),lastRenderAt=0,lastUiAt=0;
+let last=performance.now(),lastRenderAt=0,lastUiAt=0,lastMachineAt=performance.now();
 function loop(){
  requestAnimationFrame(loop);
  const now=performance.now(),dt=Math.min(0.05,(now-last)/1000);last=now;
@@ -1307,8 +1337,7 @@ function loop(){
   const sp=speed()*(dash?1.6:1);
   const cy=Math.cos(player.yaw),sy=Math.sin(player.yaw);
   const dx=(mx*cy+mz*sy)*sp*dt,dz=(-mx*sy+mz*cy)*sp*dt;
-  if(!collide(player.x+dx,player.z))player.x+=dx;
-  if(!collide(player.x,player.z+dz))player.z+=dz;
+  movePlayer(dx,dz);
   player.x=clamp(player.x,ROOM.x0+0.6,ROOM.x1-0.6);
   player.z=clamp(player.z,ROOM.z0+0.6,ROOM.z1-0.6);
   hands.position.y=Math.sin(S.time*(l>0?9:2))*(l>0?0.02:0.005);
@@ -1323,7 +1352,7 @@ function loop(){
  }catch(updateError){
   showGameRuntimeError("ゲーム更新/移動",updateError);
  }
- safeGameStep("設備",()=>updateMachines(dt));
+ if(now-lastMachineAt>=120){const machineDt=Math.min(0.3,(now-lastMachineAt)/1000);lastMachineAt=now;safeGameStep("設備",()=>updateMachines(machineDt))}
  if(now-lastUiAt>120){
   lastUiAt=now;
   safeGameStep("チュートリアル",updateTut);
@@ -1347,7 +1376,7 @@ function loop(){
   });
  }
  /* 描画は最大40fps。入力・移動・ゲーム処理はそのまま動かす。 */
- if(now-lastRenderAt>=1000/40){
+ if(now-lastRenderAt>=1000/30){
   lastRenderAt=now;
   try{
    camera.position.set(player.x,1.6,player.z);
@@ -1414,6 +1443,7 @@ async function startGame(loaded,alreadyLoaded=false){
  // ロードを完了してからログイン画面を閉じる。API失敗時はログイン画面に詳細を残す。
  const data=alreadyLoaded?loaded:(loaded||await cloudLoad());
  if(data&&data.v===3)applySave(data);
+ tutorialCarryBase=carry.length;tutorialStoredBase=S.stored;
  gameStarted=true;
  $("login").style.display="none";
  toast("ようこそ、"+(AUTH.user||"ゲスト")+"さん!");
