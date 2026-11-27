@@ -1289,27 +1289,32 @@ function renderMusic(p,refresh=false){
  });
 }
 function renderSettings(p){
+ let keyRows="";
+ for(const id of Object.keys(KEY_BIND_LABELS)){
+  keyRows+="<div style='display:flex;align-items:center;justify-content:space-between;gap:8px;padding:6px 8px;border-bottom:1px solid #55452e'><span>"+KEY_BIND_LABELS[id]+"</span><button type='button' data-keybind='"+id+"' style='min-width:96px;padding:6px 10px;border-radius:7px'>"+(remappingAction===id?"キーを押してね":keyLabel(keyBinds[id]))+"</button></div>";
+ }
  p.innerHTML="<div style='line-height:1.8'>"+
-  "<b>マウス視点操作</b><p>ゲーム画面を一度クリックするとマウスが固定され、ボタンを押し続けなくてもマウス移動だけで視点が動きます。Escキーで解除できます。</p>"+
+  "<b>マウス視点操作</b><p>ゲーム画面をクリックするとマウス視点を開始します。パネルを開くキーを押すとマウス固定を解除して、ショップや設定を操作できます。</p>"+
   "<button id='startMouseLook' style='padding:9px 14px;border:0;border-radius:8px;background:#69e6a3;font-weight:800'>マウス視点を開始</button>"+
   "<hr style='border-color:#8a6a30;margin:14px 0'>"+
   "<label for='mouseSensitivity'>視点感度: <b id='mouseSensitivityValue'>"+mouseSensitivity.toFixed(4)+"</b></label><br>"+
   "<input id='mouseSensitivity' type='range' min='0.0005' max='0.01' step='0.0005' value='"+mouseSensitivity+"' style='width:100%'>"+
-  "<p style='font-size:12px;color:#c8b890'>感度はこのブラウザーに保存されます。設定はチュートリアル中もいつでも開けます。</p></div>";
+  "<hr style='border-color:#8a6a30;margin:14px 0'><b>キー設定（各ボタンを押してから割り当てたいキーを押す）</b><div style='margin-top:8px;border:1px solid #8a6a30;border-radius:9px;overflow:hidden'>"+keyRows+"</div>"+
+  "<button id='resetKeyBinds' style='margin-top:9px;padding:7px 12px;border-radius:7px'>キー設定を初期状態に戻す</button>"+
+  "<hr style='border-color:#8a6a30;margin:14px 0'>"+
+  "<label for='productRenderDistance'>商品画像の描画範囲: <b id='productRenderDistanceValue'>"+productRenderDistance.toFixed(1)+"m</b></label><br>"+
+  "<input id='productRenderDistance' type='range' min='4' max='24' step='1' value='"+productRenderDistance+"' style='width:100%'>"+
+  "<p style='font-size:12px;color:#c8b890'>近くの商品だけ写真で表示します。表示数は距離に合わせて増減し、最大4096個まで描画します。設定はこのブラウザーに保存されます。</p></div>";
  const slider=$("mouseSensitivity");
- slider.addEventListener("input",()=>{
-  mouseSensitivity=Number(slider.value);
-  $("mouseSensitivityValue").textContent=mouseSensitivity.toFixed(4);
-  try{localStorage.setItem("cm3d_mouse_sensitivity",String(mouseSensitivity))}catch(e){}
- });
+ slider.addEventListener("input",()=>{mouseSensitivity=Number(slider.value);$("mouseSensitivityValue").textContent=mouseSensitivity.toFixed(4);try{localStorage.setItem("cm3d_mouse_sensitivity",String(mouseSensitivity))}catch(e){}});
+ const range=$("productRenderDistance");
+ range.addEventListener("input",()=>{productRenderDistance=Number(range.value);$("productRenderDistanceValue").textContent=productRenderDistance.toFixed(1)+"m";try{localStorage.setItem("cm3d_product_render_distance",String(productRenderDistance))}catch(e){}updateChunkVisibility(true);refreshNearbyDetails(true)});
+ p.querySelectorAll("button[data-keybind]").forEach(btn=>btn.addEventListener("click",()=>{remappingAction=btn.dataset.keybind;renderSettings(p);toast(KEY_BIND_LABELS[remappingAction]+" に割り当てるキーを押してください（Escでキャンセル）")}));
+ $("resetKeyBinds").addEventListener("click",()=>{keyBinds={...DEFAULT_KEY_BINDS};remappingAction=null;saveKeyBinds();renderSettings(p);toast("キー設定を初期状態に戻しました")});
  $("startMouseLook").addEventListener("click",()=>{
-  closePanels();
-  if(typeof canvas.requestPointerLock==="function"){
-   try{
-    const request=canvas.requestPointerLock();
-    if(request&&typeof request.catch==="function")request.catch(()=>toast("マウス視点を開始できませんでした"));
-   }catch(e){toast("マウス視点を開始できませんでした")}
-  }else toast("このブラウザーはマウス固定に対応していません");
+  mode="";$("panel").style.display="none";panelReturnToPointerLock=false;
+  if(typeof canvas.requestPointerLock==="function"){try{const request=canvas.requestPointerLock();if(request&&typeof request.catch==="function")request.catch(()=>toast("マウス視点を開始できませんでした"))}catch(e){toast("マウス視点を開始できませんでした")}}
+  else toast("このブラウザーはマウス固定に対応していません");
  });
 }
 /* スキルツリー(RPG風・木造銅色UI) */
