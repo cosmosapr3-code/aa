@@ -59,6 +59,124 @@ html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#14161c;fon
 #loginMsg{color:#ffb0a8;min-height:20px;font-size:12px;line-height:1.55;white-space:pre-wrap;overflow-wrap:anywhere;text-align:left;max-height:180px;overflow:auto;margin:8px 4px}
 #gameRuntimeError{display:none;position:fixed;left:10px;right:10px;bottom:10px;z-index:10000;background:#541d1df2;color:#fff;border:2px solid #ff8a70;border-radius:10px;padding:10px 12px;font:13px/1.5 system-ui;white-space:pre-wrap;overflow-wrap:anywhere;max-height:32vh;overflow:auto}
 .note{font-size:11px;color:#b0a890;margin-top:8px;line-height:1.5}
+
+/* 画面の読みやすさを優先したUI調整 */
+#hud{
+ left:12px;top:12px;right:196px;max-width:calc(100vw - 220px);
+ padding:11px 15px;border:1px solid rgba(191,222,245,.62);border-radius:13px;
+ background:rgba(9,20,34,.88);backdrop-filter:blur(7px);
+ color:#fff;font:800 15px/1.65 system-ui;letter-spacing:.01em;
+ text-shadow:0 1px 2px #000;box-shadow:0 5px 18px rgba(0,0,0,.28);
+}
+#hud span{color:#f2f7fc}
+#hud span:last-child{font-size:13px!important;color:#cde6f8;line-height:1.7}
+#prompt{
+ top:57%;max-width:86vw;box-sizing:border-box;padding:9px 18px;
+ border:1px solid rgba(255,229,142,.85);border-radius:12px;
+ background:rgba(10,20,31,.88);color:#fff1a6;
+ font:800 18px/1.5 system-ui;text-align:center;white-space:normal;
+ text-shadow:0 2px 3px #000;box-shadow:0 4px 14px rgba(0,0,0,.3)
+}
+#tut{
+ bottom:126px;padding:16px 19px;width:min(560px,92vw);
+ border:2px solid #83c9f4;background:rgba(7,20,34,.96);
+ color:#fff;font-size:15px;line-height:1.7;box-shadow:0 8px 28px #0009
+}
+#tut .tut-title{font-size:19px}
+#tut .tut-body{font-size:15px;color:#fff;line-height:1.7}
+#tut .tut-key{font-size:14px;padding:7px 11px;background:#15527c;border:1px solid #8fd6ff}
+#tutSkip{bottom:126px;padding:10px 14px;font-size:14px;border:1px solid #9bdfff;background:#123c5b;color:#fff}
+#inventory{
+ bottom:14px;padding:10px 16px;min-width:min(360px,92vw);
+ border:2px solid #9bd3f4;background:rgba(8,22,37,.95);
+ font-size:14px;line-height:1.7;box-shadow:0 5px 20px #0007
+}
+#inventory .inv-item{padding:5px 10px;font-size:13px;background:#1d4260;border-color:#9cc9e4}
+#toast{
+ max-width:86vw;padding:10px 16px;border:1px solid #a8dfff;border-radius:12px;
+ background:rgba(7,22,38,.95);font-size:16px;line-height:1.5;box-shadow:0 6px 22px #0008
+}
+#minimap{width:180px;height:108px;border:2px solid #b9dfff;border-radius:10px;box-shadow:0 4px 14px #0006}
+#panel{
+ width:min(900px,94vw);max-height:88vh;box-sizing:border-box;
+ padding:22px 26px 24px;border:2px solid #80bde8;border-radius:17px;
+ background:rgba(11,26,43,.98);color:#f7fbff;
+ font:500 16px/1.7 system-ui;box-shadow:0 16px 48px #000b;backdrop-filter:blur(12px)
+}
+#panel h3{
+ margin:0 92px 16px 0;padding:0 0 10px;border-bottom:1px solid #487da3;
+ color:#ffe28a;font-size:23px;line-height:1.35;letter-spacing:.02em
+}
+#panelClose{
+ right:14px;top:14px;min-height:40px;padding:8px 14px;
+ border:1px solid #ffa5a0;background:#993a3e;font-size:14px
+}
+#panelBody{font-size:16px;line-height:1.75;color:#f7fbff}
+#panelBody p{margin:8px 0 13px;color:#e0ebf5}
+#panelBody label,#panelBody b{color:#fff}
+#panelBody button{
+ min-height:42px;padding:9px 15px;border:1px solid #9bd3f4;border-radius:9px;
+ background:#1d6494;color:#fff;font:800 14px/1.35 system-ui;
+ box-shadow:0 2px 5px rgba(0,0,0,.2);cursor:pointer
+}
+#panelBody button:hover{background:#287fb6;border-color:#d4efff}
+#panelBody button:disabled{opacity:.42;cursor:not-allowed;filter:grayscale(.4)}
+#panelBody input:not([type=range]),#panelBody select{
+ min-height:40px;padding:8px 11px;border:1px solid #7faac8;border-radius:8px;
+ background:#101d2b;color:#fff;font-size:15px
+}
+#panelBody input[type=range]{width:100%;accent-color:#72c8ff}
+#panelBody hr{border:0;border-top:1px solid #47627a!important;margin:18px 0!important}
+#panelBody [style*="font-size:11px"],#panelBody [style*="font-size:12px"]{font-size:13px!important;line-height:1.6}
+#panelBody .sk-head{border-bottom:2px solid #5792b8;padding-bottom:11px;margin-bottom:13px}
+#panelBody .sk-title{font:900 22px system-ui;color:#ffe28a;letter-spacing:1px}
+#panelBody .sk-ap{background:#172f45;border:1px solid #8ec6ec;color:#fff2bf;font-size:16px;padding:7px 15px}
+#panelBody .sk-grid{grid-template-columns:repeat(auto-fit,minmax(145px,1fr));gap:11px}
+#panelBody .sk-node{
+ min-height:86px;display:flex;flex-direction:column;justify-content:center;gap:4px;
+ padding:11px 9px;background:linear-gradient(180deg,#294d69,#18344d);
+ border:1px solid #679cc1;border-radius:12px;color:#fff;font-size:15px
+}
+#panelBody .sk-node b{font-size:15px;line-height:1.4}
+#panelBody .sk-node span{font-size:13px;color:#e1eff9}
+#panelBody .sk-node .sk-cost{font-size:14px;color:#fff0a6;font-weight:900}
+#panelBody .sk-node.lock{opacity:.72;filter:grayscale(.35)}
+#panelBody .sk-node:hover{border-color:#ffe28a;background:#315f80}
+#panelBody .sk-detail{margin-top:13px;padding:15px;background:#10273a;border:1px solid #70a8cf;border-radius:12px;color:#fff;font-size:15px}
+#panelBody .sk-detail button{margin-top:10px;background:#e9b94f;border-color:#ffe4a0;color:#243447}
+#panelBody .shop-head{font-size:22px;color:#ffe28a}
+#panelBody .shop-grid{grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:12px}
+#panelBody .shop-card{padding:13px;background:#172f45;border:1px solid #6aa3cd;border-radius:12px}
+#panelBody .shop-card b{font-size:16px;color:#c4e8ff}
+#panelBody .shop-card span{font-size:14px;color:#e1eff9;line-height:1.55}
+#panelBody .shop-card small{font-size:13px;color:#d3e4f2;line-height:1.55}
+#panelBody .shop-card .shop-cost{font-size:15px;color:#fff0a6}
+#panelBody .shop-card.poor{opacity:.72}
+.btnbar{left:12px;bottom:12px;gap:9px;max-width:min(650px,calc(100vw - 24px))}
+.btnbar button{
+ min-width:86px;min-height:46px;padding:10px 16px;border:1px solid #d8f2ff;
+ border-radius:11px;font:800 15px system-ui;box-shadow:0 4px 14px #0006
+}
+.btnbar button.alt{background:#185a88;color:#fff}
+.btnbar button:focus-visible,#panel button:focus-visible,#panelBody button:focus-visible{
+ outline:3px solid #ffe28a;outline-offset:2px
+}
+@media(max-width:700px){
+ #hud{left:7px;top:7px;right:116px;max-width:calc(100vw - 132px);padding:7px 9px;font-size:12px;line-height:1.5}
+ #hud span:last-child{font-size:11px!important}
+ #minimap{width:102px;height:62px;right:6px;top:6px}
+ #prompt{font-size:15px;top:55%;padding:8px 12px}
+ #tut{bottom:116px;padding:12px 14px;width:94vw}
+ #tutSkip{bottom:116px;right:7px;padding:7px 9px;font-size:12px}
+ #inventory{bottom:68px;min-width:0;width:calc(100vw - 20px);max-width:calc(100vw - 20px);font-size:12px}
+ #panel{width:96vw;max-height:90vh;padding:17px 14px 18px}
+ #panel h3{font-size:20px;margin-right:84px}
+ #panelBody{font-size:15px}
+ #panelBody .sk-grid{grid-template-columns:repeat(auto-fit,minmax(125px,1fr));gap:8px}
+ #panelBody .shop-grid{grid-template-columns:1fr}
+ .btnbar{left:6px;right:6px;bottom:6px;justify-content:center;gap:5px}
+ .btnbar button{min-width:0;flex:1;padding:9px 7px;min-height:42px;font-size:12px}
+}
 </style>
 </head>
 <body>
@@ -78,7 +196,7 @@ html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#14161c;fon
  <button id="btnMusic" class="alt">BGM</button>
  <button id="btnSettings" class="alt">設定</button>
 </div>
-<div id="panel"><button id="panelClose">✕ 閉じる</button><h3 id="panelTitle"></h3><div id="panelBody"></div></div>
+<div id="panel" aria-label="ゲームメニュー"><button id="panelClose">✕ 閉じる</button><h3 id="panelTitle"></h3><div id="panelBody"></div></div>
 <div id="login"><div id="loginBox">
  <h2>🧹 片付けマスター3D SHOP</h2>
  <p style="font-size:13px;color:#c8b890">アカウントでログインしてセーブデータをクラウド保存しよう!</p>
@@ -1180,7 +1298,7 @@ function navText(){
 function updateHUD(){
  const carryTxt=carry.length?("手持ち "+carry.length+"/"+carryCap()+" → "+[...new Set(carry.map(c=>CATS[PRODUCTS[c.t].c].n))].join("・")):"手持ちなし";
  $("hud").innerHTML="¥"+Math.floor(S.money)+" | 🎫"+S.tickets+" | Lv"+S.level+"("+Math.floor(S.xp)+"/"+xpNeed(S.level)+") AP:"+S.ap+" | 回収 "+S.col+"/"+TOTAL+" | コンボx"+combo+
- "<br><span style='font-weight:400'>"+carryTxt+(navText()?" | 🧭"+navText():"")+"</span><br><span style='font-weight:400;font-size:11px'>移動:"+keyLabel(keyBinds.forward)+"/"+keyLabel(keyBinds.backward)+"/"+keyLabel(keyBinds.left)+"/"+keyLabel(keyBinds.right)+"・ジャンプ:"+keyLabel(keyBinds.jump)+"・操作:"+keyLabel(keyBinds.interact)+"・スキル:"+keyLabel(keyBinds.skill)+"・ショップ:"+keyLabel(keyBinds.shop)+"・情報:"+keyLabel(keyBinds.info)+"・BGM:"+keyLabel(keyBinds.music)+"・設定:"+keyLabel(keyBinds.settings)+"</span>";
+ "<br><span style='font-weight:400'>"+carryTxt+(navText()?" | 🧭"+navText():"")+"</span><br><span style='font-weight:400;font-size:13px'>移動:"+keyLabel(keyBinds.forward)+"/"+keyLabel(keyBinds.backward)+"/"+keyLabel(keyBinds.left)+"/"+keyLabel(keyBinds.right)+"・ジャンプ:"+keyLabel(keyBinds.jump)+"・操作:"+keyLabel(keyBinds.interact)+"・スキル:"+keyLabel(keyBinds.skill)+"・ショップ:"+keyLabel(keyBinds.shop)+"・情報:"+keyLabel(keyBinds.info)+"・BGM:"+keyLabel(keyBinds.music)+"・設定:"+keyLabel(keyBinds.settings)+"</span>";
  const inv=$("inventory");
  if(inv){inv.style.display="block";inv.innerHTML="<b>🛒 持ち物 "+carry.length+"/"+carryCap()+"</b><div class='inv-items'>"+(carry.length?carry.map(c=>"<span class='inv-item'>"+PRODUCTS[c.t].n+"</span>").join(""):"<span class='inv-empty'>なし — 商品に近づいて E で拾う</span>")+"</div>"}
 }
@@ -1347,9 +1465,9 @@ function renderSettings(p){
   "<hr style='border-color:#8a6a30;margin:14px 0'><b>キー設定（各ボタンを押してから割り当てたいキーを押す）</b><div style='margin-top:8px;border:1px solid #8a6a30;border-radius:9px;overflow:hidden'>"+keyRows+"</div>"+
   "<button id='resetKeyBinds' style='margin-top:9px;padding:7px 12px;border-radius:7px'>キー設定を初期状態に戻す</button>"+
   "<hr style='border-color:#8a6a30;margin:14px 0'>"+
-  "<label for='productRenderDistance'>商品画像の描画範囲: <b id='productRenderDistanceValue'>"+productRenderDistance.toFixed(1)+"m</b></label><br>"+
+  "<label for='productRenderDistance'>近距離3Dモデルの表示範囲: <b id='productRenderDistanceValue'>"+productRenderDistance.toFixed(1)+"m</b></label><br>"+
   "<input id='productRenderDistance' type='range' min='4' max='24' step='1' value='"+productRenderDistance+"' style='width:100%'>"+
-  "<p style='font-size:12px;color:#c8b890'>近くの商品だけ写真で表示します。表示数は距離に合わせて増減し、最大4096個まで描画します。設定はこのブラウザーに保存されます。</p></div>";
+  "<p style='font-size:12px;color:#c8b890'>近くの商品はキャップ・ふた・包装・小物パーツを含む3Dモデルで表示します。表示数は距離に合わせて増減し、最大2048個まで描画します。設定はこのブラウザーに保存されます。</p></div>";
  const slider=$("mouseSensitivity");
  slider.addEventListener("input",()=>{mouseSensitivity=Number(slider.value);$("mouseSensitivityValue").textContent=mouseSensitivity.toFixed(4);try{localStorage.setItem("cm3d_mouse_sensitivity",String(mouseSensitivity))}catch(e){}});
  const range=$("productRenderDistance");
