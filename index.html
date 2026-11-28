@@ -724,10 +724,9 @@ function refreshNearbyDetails(force=false){
 }
 function takeInstance(t,idx,toState){
  state[idx]=toState;
- const detailSlot=nearbyDetailSlots.get(idx);
- if(detailSlot){
-  detailSlot.mesh.setMatrixAt(detailSlot.slot,zeroM);
-  detailSlot.mesh.instanceMatrix.needsUpdate=true;
+ const detailSlots=nearbyDetailSlots.get(idx);
+ if(detailSlots){
+  for(const slot of detailSlots){slot.mesh.setMatrixAt(slot.slot,zeroM);slot.mesh.instanceMatrix.needsUpdate=true}
   nearbyDetailSlots.delete(idx);
  }
  const it=itemByIdx[idx];if(!it)return;
@@ -879,11 +878,11 @@ const heldMesh=new THREE.Mesh(SHAPES[0],prodMats[0]);heldMesh.visible=false;hand
 const carry=[];
 const drops=[]; /* 落とした物(永続) */
 const dropMeshPool=[];
-function dropMesh(t){return new THREE.Mesh(SHAPES[PRODUCTS[t].s],detailProductMaterial(t))}
+function dropMesh(t){return new THREE.Mesh(SHAPES[PRODUCTS[t].s],packageMaterial(t))}
 function syncHeld(){
  if(!carry.length){heldMesh.visible=false;return}
  const t=carry[carry.length-1].t;
- heldMesh.geometry=SHAPES[PRODUCTS[t].s];heldMesh.material=detailProductMaterial(t);
+ heldMesh.geometry=SHAPES[PRODUCTS[t].s];heldMesh.material=packageMaterial(t);
  heldMesh.visible=true;heldMesh.position.set(0.32,-0.28,-0.7);heldMesh.rotation.set(0.3,0.5,0);
 }
 function dropTop(){
