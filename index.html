@@ -350,58 +350,111 @@ const HGT=[0.30,0.34,0.34,0.24,0.16,0.34,0.36,0.22,0.34,0.18,0.34,0.12,0.30,0.30
 /* 商品名を印刷した軽量ラベルテクスチャ。画像素材を大量ロードせず、100種を識別可能にする。 */
 /* 100種類を10カテゴリの共有マテリアルに統合。描画コールとGPUテクスチャを大幅削減。商品名は照準/HUDで表示する。 */
 const prodMats=CATS.map(c=>new THREE.MeshLambertMaterial({color:c.col}));
-/* 近距離だけ使う商品別パッケージ画像。遠距離はカテゴリ共通マテリアルのまま。 */
-/* 実画像アトラス。12種類の透明背景アイコンを必要な時だけテクスチャ化する。 */
+/* 近距離は商品ごとの本物の3Dモデルへ切り替える。遠距離は軽量3Dメッシュ */
 let productRenderDistance=8.5;
 try{const savedRange=Number(localStorage.getItem("cm3d_product_render_distance"));if(Number.isFinite(savedRange))productRenderDistance=Math.max(4,Math.min(24,savedRange))}catch(e){}
-const PRODUCT_ATLAS_URL="./assets/product-photo-atlas.svg?v=20261127-photos-1";
-const productAtlasImage=new Image();
-let productAtlasReady=false;
-const detailProductMaterials=new Map();
-function productIconCell(t){
- const p=PRODUCTS[t],n=((t%10)+10)%10;
- const map=[
-  [0,1,2,3,4,5,2,3,0,4],
-  [14,15,14,14,15,14,14,15,10,15],
-  [6,6,7,9,7,8,8,9,7,8],
-  [10,11,11,10,10,10,11,10,10,11],
-  [12,12,12,13,13,3,12,12,13,13],
-  [14,15,14,14,15,14,14,15,14,14],
-  [10,4,4,10,4,3,0,10,0,3],
-  [11,9,11,11,9,8,11,11,9,11],
-  [2,13,4,2,13,2,13,4,2,13],
-  [3,1,5,2,3,4,3,5,1,4]
- ];
- return map[p.c] ? map[p.c][n] : -1;
-}
-function detailProductMaterial(sprite){
- if(detailProductMaterials.has(sprite))return detailProductMaterials.get(sprite);
- const cv=document.createElement("canvas");cv.width=128;cv.height=128;
- const g=cv.getContext("2d");
- if(productAtlasReady){
-  const col=sprite%4,row=Math.floor(sprite/4);
-  g.drawImage(productAtlasImage,col*128,row*128,128,128,0,0,128,128);
- }else{
-  g.fillStyle="#26394a";g.fillRect(0,0,128,128);
-  g.fillStyle="#8ed9ff";g.font="bold 12px sans-serif";g.textAlign="center";
-  g.fillText("読み込み中",64,68);
- }
- const tex=new THREE.CanvasTexture(cv);tex.generateMipmaps=false;
- tex.minFilter=THREE.LinearFilter;tex.magFilter=THREE.LinearFilter;
- const mat=new THREE.MeshBasicMaterial({map:tex,transparent:true,alphaTest:0.04,side:THREE.DoubleSide,depthWrite:false,toneMapped:false});
- detailProductMaterials.set(sprite,mat);return mat;
-}
-productAtlasImage.onload=()=>{
- productAtlasReady=true;
- detailProductMaterials.clear();
- for(const [sprite,mesh] of nearbyDetailMeshes)mesh.material=detailProductMaterial(sprite);
- /* 写真が読めたら遠距離用の単色モデルを隠し、近距離の写真だけ表示 */
- if(typeof chunkRenderInfo!=="undefined")for(const info of chunkRenderInfo.values())for(const mesh of info.meshes)mesh.visible=false;
- if(typeof refreshNearbyDetails==="function")refreshNearbyDetails(true);
- console.info("[CM3D] 16-cell product photo atlas loaded");
+const SHAPE_BOUNDS=SHAPES.map(g=>{g.computeBoundingBox();const b=g.boundingBox;return{x:b.max.x-b.min.x,y:b.max.y-b.min.y,z:b.max.z-b.min.z}});
+const packageMaterials=new Map();
+const packageTextures=new Map();
+const modelTemplates=new Map();
+const modelAccent={
+ paper:new THREE.MeshLambertMaterial({color:0xfff3de}),
+ white:new THREE.MeshLambertMaterial({color:0xf7f8f4}),
+ cap:new THREE.MeshLambertMaterial({color:0xe7edf0}),
+ metal:new THREE.MeshStandardMaterial({color:0xb8c5ca,metalness:0.72,roughness:0.3}),
+ dark:new THREE.MeshLambertMaterial({color:0x4a3933}),
+ cream:new THREE.MeshLambertMaterial({color:0xfff0c8}),
+ clear:new THREE.MeshLambertMaterial({color:0xc9efff,transparent:true,opacity:0.48,depthWrite:false}),
+ wood:new THREE.MeshLambertMaterial({color:0xc89156}),
+ ink:new THREE.MeshLambertMaterial({color:0x34465d})
 };
-productAtlasImage.onerror=()=>console.error("[CM3D] product icon atlas failed:",PRODUCT_ATLAS_URL);
-productAtlasImage.src=PRODUCT_ATLAS_URL;
+function packageMaterial(t){
+ if(packageMaterials.has(t))return packageMaterials.get(t);
+ const p=PRODUCTS[t],cv=document.createElement("canvas");cv.width=256;cv.height=256;
+ const g=cv.getContext("2d"),base="#"+Number(p.col).toString(16).padStart(6,"0");
+ g.fillStyle=base;g.fillRect(0,0,256,256);
+ g.fillStyle="rgba(255,255,255,.26)";g.fillRect(0,0,256,25);
+ g.fillStyle="rgba(20,30,40,.22)";g.fillRect(0,190,256,66);
+ g.fillStyle="rgba(255,255,255,.92)";g.fillRect(14,65,228,104);
+ g.fillStyle="#243447";g.textAlign="center";g.textBaseline="middle";
+ g.font="bold 20px system-ui";g.fillText(CATS[p.c].n,128,43);
+ let name=String(p.n||"商品");
+ while(g.measureText(name).width>210&&name.length>4)name=name.slice(0,-1);
+ g.font="bold 25px system-ui";g.fillText(name,128,113);
+ g.fillStyle=base;g.beginPath();g.arc(128,151,10,0,Math.PI*2);g.fill();
+ g.fillStyle="#fff";g.font="bold 15px system-ui";g.fillText("SHOP "+String(t+1).padStart(2,"0"),128,220);
+ g.fillStyle="rgba(255,255,255,.35)";g.fillRect(0,0,8,256);g.fillRect(248,0,8,256);
+ const tex=new THREE.CanvasTexture(cv);tex.generateMipmaps=true;tex.minFilter=THREE.LinearMipmapLinearFilter;tex.magFilter=THREE.LinearFilter;
+ if(renderer&&renderer.capabilities)tex.anisotropy=Math.min(4,renderer.capabilities.getMaxAnisotropy());
+ const mat=new THREE.MeshLambertMaterial({map:tex,color:0xffffff});
+ packageTextures.set(t,tex);packageMaterials.set(t,mat);return mat;
+}
+function fallenCenterY(t,roll,stackY=0){
+ const b=SHAPE_BOUNDS[PRODUCTS[t].s];
+ return (Math.abs(Math.cos(roll))*b.y+Math.abs(Math.sin(roll))*b.z)*0.5+0.012+(Number(stackY)||0);
+}
+const itemEuler=new THREE.Euler(),itemQuaternion=new THREE.Quaternion(),itemPosition=new THREE.Vector3(),itemScale=new THREE.Vector3(1,1,1);
+function makeItemMatrix(it,target){
+ const roll=Number.isFinite(it.roll)?it.roll:Math.PI*0.5;
+ const yaw=Number.isFinite(it.yaw)?it.yaw:((it.idx*2.399)% (Math.PI*2));
+ itemEuler.set(roll,yaw,it.lean||0,"YXZ");itemQuaternion.setFromEuler(itemEuler);
+ itemPosition.set(it.x,fallenCenterY(it.t,roll,it.stackY),it.z);
+ target.compose(itemPosition,itemQuaternion,itemScale);return target;
+}
+function createProductTemplate(t){
+ if(modelTemplates.has(t))return modelTemplates.get(t);
+ const p=PRODUCTS[t],shape=p.s,root=new THREE.Group();
+ const add=(geometry,material,x=0,y=0,z=0,rx=0,ry=0,rz=0)=>{
+  const mesh=new THREE.Mesh(geometry,material);
+  mesh.position.set(x,y,z);mesh.rotation.set(rx,ry,rz);root.add(mesh);return mesh;
+ };
+ const bounds=SHAPE_BOUNDS[shape],halfY=bounds.y*0.5;
+ add(SHAPES[shape],packageMaterial(t));
+ /* 商品の種類が一目で分かる立体パーツ */
+ if(shape===0){
+  add(new THREE.BoxGeometry(.105,.026,.075),modelAccent.white,-.01,halfY+.012,0,.08,0,-.08);
+  add(new THREE.BoxGeometry(.065,.018,.045),modelAccent.paper,.025,halfY+.027,.012,.18,0,.14);
+ }else if(shape===2||shape===10||shape===13){
+  add(new THREE.CylinderGeometry(.052,.062,.055,14),modelAccent.cap,0,halfY+.02,0);
+  add(new THREE.CylinderGeometry(.06,.06,.012,16),modelAccent.metal,0,halfY+.053,0);
+  if(shape===13)add(new THREE.BoxGeometry(.10,.035,.045),modelAccent.cap,.025,halfY-.025,0,0,0,.18);
+ }else if(shape===3){
+  add(new THREE.CylinderGeometry(.096,.096,.012,18),modelAccent.metal,0,halfY+.006,0);
+  add(new THREE.CylinderGeometry(.07,.07,.006,16),modelAccent.dark,0,halfY+.014,0);
+  add(new THREE.CylinderGeometry(.096,.096,.009,18),modelAccent.metal,0,-halfY-.004,0);
+ }else if(shape===4||shape===16){
+  add(new THREE.CylinderGeometry(.116,.116,.018,18),modelAccent.white,0,halfY-.005,0);
+  add(new THREE.SphereGeometry(.082,14,10),modelAccent.cream,0,halfY+.055,0,0,0,0);
+  add(new THREE.SphereGeometry(.047,12,8),modelAccent.paper,.035,halfY+.09,.012);
+ }else if(shape===5||shape===12||shape===14){
+  add(new THREE.BoxGeometry(bounds.x*.8,.012,.014),modelAccent.clear,0,0,bounds.z*.5+.008);
+  add(new THREE.BoxGeometry(.025,bounds.y*.48,.018),modelAccent.white,0,-.015,bounds.z*.5+.018);
+  add(new THREE.BoxGeometry(.012,bounds.y*.32,.014),modelAccent.ink,-.023,-.015,bounds.z*.5+.028);
+ }else if(shape===6){
+  add(new THREE.BoxGeometry(bounds.x*.92,.018,.018),modelAccent.paper,0,halfY-.008,bounds.z*.5+.005);
+  add(new THREE.BoxGeometry(bounds.x*.92,.018,.018),modelAccent.paper,0,-halfY+.008,bounds.z*.5+.005);
+ }else if(shape===8){
+  add(new THREE.BoxGeometry(bounds.x*.88,.018,bounds.z*.72),modelAccent.paper,0,halfY-.005,0);
+  add(new THREE.BoxGeometry(.022,bounds.y*.88,.012),modelAccent.ink,-bounds.x*.48,0,bounds.z*.5+.006);
+ }else if(shape===9){
+  add(new THREE.CylinderGeometry(.052,.052,.184,16),modelAccent.dark,0,0,0);
+  add(new THREE.TorusGeometry(.099,.008,6,18),modelAccent.white,0,halfY-.002,0);
+ }else if(shape===11){
+  add(new THREE.BoxGeometry(bounds.x*.84,.026,.012),modelAccent.white,0,.005,bounds.z*.5+.008);
+ }else if(shape===15){
+  add(new THREE.BoxGeometry(.034,.16,.026),modelAccent.wood,0,-halfY-.075,0);
+  add(new THREE.SphereGeometry(.018,8,6),modelAccent.paper,0,-halfY-.15,0);
+ }else if(shape===17){
+  add(new THREE.SphereGeometry(.115,14,10),modelAccent.cream,0,halfY-.015,0);
+  add(new THREE.SphereGeometry(.035,10,8),modelAccent.paper,.03,halfY+.055,.02);
+ }else if(shape===1){
+  add(new THREE.BoxGeometry(bounds.x*.72,.014,.012),modelAccent.white,0,halfY*.55,bounds.z*.5+.006);
+ }
+ root.updateMatrixWorld(true);
+ const parts=root.children.filter(m=>m.isMesh).map(m=>({geometry:m.geometry,material:m.material,localMatrix:m.matrixWorld.clone()}));
+ const template={parts};
+ modelTemplates.set(t,template);return template;
+}
 const rareGeo={register:boxGeo(0.5,0.45,0.45),cart:boxGeo(0.5,0.42,0.6),sign:boxGeo(0.7,0.5,0.1),case:boxGeo(0.45,0.5,0.35)};
 
 /* ---------- 棚(ゴンドラ)定義 ---------- */
