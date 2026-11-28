@@ -599,10 +599,14 @@ function placeAll(){
    if(inShelf(x,z)){x+= x<0?-1.4:1.4; if(inShelf(x,z))continue}
    const h=HGT[PRODUCTS[t].s];
    const stack=rng()<0.12?Math.floor(rng()*3):0;
-   pos[(base+placed)*3]=x;pos[(base+placed)*3+1]=h/2+stack*h;pos[(base+placed)*3+2]=z;
-   state[base+placed]=0;
+   const roll=(rng()<0.5?-1:1)*(Math.PI*0.5+(rng()-0.5)*0.26);
+   const yaw=rng()*Math.PI*2,lean=(rng()-0.5)*0.16,stackY=stack*h;
+   const idx=base+placed;
+   const item={t,idx,x,z,roll,yaw,lean,stackY};
+   pos[idx*3]=x;pos[idx*3+1]=fallenCenterY(t,roll,stackY);pos[idx*3+2]=z;
+   state[idx]=0;
    const ck=ckOf(x,z);let arr=chunkMap.get(ck);if(!arr){arr=[];chunkMap.set(ck,arr)}
-   arr.push({t,idx:base+placed,x,z});
+   arr.push(item);
    placed++;
   }
  }
@@ -625,7 +629,7 @@ function placeAll(){
   for(const group of renderGroups.values()){
    const list=group.items;
    const im=new THREE.InstancedMesh(SHAPES[group.shape],prodMats[group.category],list.length);
-   for(let i=0;i<list.length;i++){const it=list[i];it.mi=i;it.im=im;m4.makeTranslation(pos[it.idx*3],pos[it.idx*3+1],pos[it.idx*3+2]);im.setMatrixAt(i,m4)}
+   for(let i=0;i<list.length;i++){const it=list[i];it.mi=i;it.im=im;makeItemMatrix(it,m4);im.setMatrixAt(i,m4)}
    im.instanceMatrix.needsUpdate=true;
    im.frustumCulled=false;
    im.userData.cmFullCount=list.length;
@@ -1538,9 +1542,9 @@ function placeTutItems(){
    if(oldArr&&it.si>=0&&it.si<oldArr.length){const lastIt=oldArr[oldArr.length-1];oldArr[it.si]=lastIt;lastIt.si=it.si;oldArr.pop()}
    it.ck=newCk;const na=chunkMap.get(newCk)||[];it.si=na.length;na.push(it);chunkMap.set(newCk,na);
   }
-  pos[idx*3]=x;pos[idx*3+1]=HGT[PRODUCTS[t].s]/2;pos[idx*3+2]=z;it.x=x;it.z=z;state[idx]=0;
+  it.x=x;it.z=z;it.stackY=0;pos[idx*3]=x;pos[idx*3+1]=fallenCenterY(t,it.roll,0);pos[idx*3+2]=z;state[idx]=0;
   const newGk=ckOfCell(x,z),newGa=cellGrid.get(newGk)||[];newGa.push(it);cellGrid.set(newGk,newGa);
-  if(it.im){const m4=new THREE.Matrix4().makeTranslation(x,pos[idx*3+1],z);it.im.setMatrixAt(it.mi,m4);it.im.instanceMatrix.needsUpdate=true}
+  if(it.im){const m4=new THREE.Matrix4();makeItemMatrix(it,m4);it.im.setMatrixAt(it.mi,m4);it.im.instanceMatrix.needsUpdate=true}
   tutItems.push({t,idx});
  }
 }
