@@ -656,21 +656,14 @@ function updateChunkVisibility(force=false){
  }
 }
 const zeroM=new THREE.Matrix4().makeScale(0,0,0);
-const detailRestoreM=new THREE.Matrix4();
-const detailMatrix=new THREE.Matrix4();
-const nearbyDetailMeshes=new Map();   // sprite cell -> InstancedMesh
-const nearbyDetailSlots=new Map();    // item idx -> {mesh,slot}
+const detailRestoreM=new THREE.Matrix4(),detailItemMatrix=new THREE.Matrix4(),detailWorldMatrix=new THREE.Matrix4();
+const nearbyModelMeshes=new Map();        // product type + model part -> InstancedMesh
+const nearbyDetailSlots=new Map();        // item index -> [{mesh,slot},...]
 let nearbyDetailedItems=[],lastNearbyDetailAt=0;
-const detailPlaneGeometry=new THREE.PlaneGeometry(1,1);
-const detailUpAxis=new THREE.Vector3(0,1,0),detailLeanAxis=new THREE.Vector3(1,0,0);
-const detailBillboardQuaternion=new THREE.Quaternion(),detailLeanQuaternion=new THREE.Quaternion();
-const detailBillboardScale=new THREE.Vector3(1,1,1);
-const detailBillboardPosition=new THREE.Vector3();
-function nearestItemsInRadius(x,z,r,maxN=Math.min(4096,Math.max(256,Math.round(1024*Math.pow(r/8.5,2))))){
+function nearestItemsInRadius(x,z,r,maxN=Math.min(2048,Math.max(256,Math.round(512*Math.pow(r/8.5,2))))){
  const out=[],r2=r*r;
  for(const arr of cellsAround(x,z,r))for(const it of arr){
   if(state[it.idx]||!it.im||!it.im.parent.visible||it.mi>=it.im.count)continue;
-  if(productIconCell(it.t)<0)continue;
   const dx=it.x-x,dz=it.z-z,d=dx*dx+dz*dz;
   if(d<r2)out.push({it,d});
  }
@@ -679,59 +672,55 @@ function nearestItemsInRadius(x,z,r,maxN=Math.min(4096,Math.max(256,Math.round(1
 }
 function refreshNearbyDetails(force=false){
  const now=performance.now();
- if(!force&&now-lastNearbyDetailAt<300)return;
+ if(!force&&now-lastNearbyDetailAt<260)return;
  lastNearbyDetailAt=now;
- /* 詳細表示を外れた商品は、遠距離用の簡易モデルへ戻す */
+ /* 詳細3D表示を外れた商品は、遠距離用の立体モデルに戻す */
  for(const it of nearbyDetailedItems){
-  if(state[it.idx]||!it.im||it.mi>=it.im.userData.cmFullCount)continue;
-  detailRestoreM.makeTranslation(pos[it.idx*3],pos[it.idx*3+1],pos[it.idx*3+2]);
+  if(state[it.idx]||!it.im||it.mi<0||it.mi>=it.im.userData.cmFullCount)continue;
+  makeItemMatrix(it,detailRestoreM);
   it.im.setMatrixAt(it.mi,detailRestoreM);
   it.im.instanceMatrix.needsUpdate=true;
  }
  nearbyDetailedItems=[];
  nearbyDetailSlots.clear();
- for(const mesh of nearbyDetailMeshes.values())mesh.count=0;
- /* 設定距離内の商品写真を最大4096個まで描画 */
- const closeItems=nearestItemsInRadius(player.x,player.z,productRenderDistance),bySprite=new Map();
+ for(const mesh of nearbyModelMeshes.values())mesh.count=0;
+ /* 設定距離内の最大512〜2048個を、商品別の複数パーツからなる立体モデルで描画 */
+ const closeItems=nearestItemsInRadius(player.x,player.z,productRenderDistance),byType=new Map();
  for(const it of closeItems){
-  const sprite=productIconCell(it.t);
-  let group=bySprite.get(sprite);
-  if(!group){group=[];bySprite.set(sprite,group)}
-  group.push(it);
+  let list=byType.get(it.t);if(!list){list=[];byType.set(it.t,list)}
+  list.push(it);
  }
- for(const [sprite,list] of bySprite){
-  let mesh=nearbyDetailMeshes.get(sprite);
-  const capacity=mesh?Math.floor(mesh.instanceMatrix.array.length/16):0;
-  if(!mesh||capacity<list.length){
-   if(mesh){scene.remove(mesh);if(typeof mesh.dispose==="function")mesh.dispose()}
-   const cap=Math.max(64,Math.pow(2,Math.ceil(Math.log2(Math.max(1,list.length)))));
-   mesh=new THREE.InstancedMesh(detailPlaneGeometry,detailProductMaterial(sprite),cap);
-   mesh.count=0;mesh.frustumCulled=false;mesh.renderOrder=4;
-   scene.add(mesh);nearbyDetailMeshes.set(sprite,mesh);
+ for(const [t,list] of byType){
+  const template=createProductTemplate(t);
+  for(let partIndex=0;partIndex<template.parts.length;partIndex++){
+   const part=template.parts[partIndex],key=t+"_"+partIndex;
+   let mesh=nearbyModelMeshes.get(key);
+   const capacity=mesh?Math.floor(mesh.instanceMatrix.array.length/16):0;
+   if(!mesh||capacity<list.length){
+    if(mesh)scene.remove(mesh);
+    const cap=Math.max(64,Math.pow(2,Math.ceil(Math.log2(Math.max(1,list.length)))));
+    mesh=new THREE.InstancedMesh(part.geometry,part.material,cap);
+    mesh.count=0;mesh.frustumCulled=false;mesh.renderOrder=2;
+    scene.add(mesh);nearbyModelMeshes.set(key,mesh);
+   }
+   for(let i=0;i<list.length;i++){
+    const it=list[i];
+    makeItemMatrix(it,detailItemMatrix);
+    detailWorldMatrix.multiplyMatrices(detailItemMatrix,part.localMatrix);
+    mesh.setMatrixAt(i,detailWorldMatrix);
+    let slots=nearbyDetailSlots.get(it.idx);
+    if(!slots){slots=[];nearbyDetailSlots.set(it.idx,slots)}
+    slots.push({mesh,slot:i});
+    if(partIndex===0){
+     /* 近距離モデルに切替える間だけ元の簡易形状を隠す */
+     it.im.setMatrixAt(it.mi,zeroM);
+     nearbyDetailedItems.push(it);
+    }
+   }
+   mesh.count=list.length;mesh.instanceMatrix.needsUpdate=true;
   }
-  for(let i=0;i<list.length;i++){
-   const it=list[i],idx=it.idx;
-   /* 実物が床に倒れているように、商品ごとに傾きと向きを少し変える */
-   detailBillboardPosition.set(
-    it.x+Math.sin(player.yaw)*0.18,
-    pos[idx*3+1]+0.32,
-    it.z+Math.cos(player.yaw)*0.18
-   );
-   detailBillboardQuaternion.setFromAxisAngle(detailUpAxis,player.yaw);
-   const leanSign=(idx%2===0)?1:-1;
-   const leanAngle=leanSign*(0.45+((idx*17)%7)*0.075);
-   detailLeanQuaternion.setFromAxisAngle(detailLeanAxis,leanAngle);
-   detailBillboardQuaternion.multiply(detailLeanQuaternion);
-   detailMatrix.compose(detailBillboardPosition,detailBillboardQuaternion,detailBillboardScale);
-   mesh.setMatrixAt(i,detailMatrix);
-   it.im.setMatrixAt(it.mi,zeroM);
-   it.im.instanceMatrix.needsUpdate=true;
-   nearbyDetailSlots.set(idx,{mesh,slot:i});
-   nearbyDetailedItems.push(it);
-  }
-  mesh.count=list.length;
-  mesh.instanceMatrix.needsUpdate=true;
  }
+ for(const it of nearbyDetailedItems)if(it.im)it.im.instanceMatrix.needsUpdate=true;
 }
 function takeInstance(t,idx,toState){
  state[idx]=toState;
